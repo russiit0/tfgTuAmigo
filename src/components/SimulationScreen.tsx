@@ -1,30 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Activity, Brain, Heart, Zap, Save, User, AlertTriangle } from 'lucide-react';
+import { aiService } from '../services/ai.service';
+import type { Message, EmotionMetrics, UserProfile } from '../models/interfaces';
 
 interface SimulationScreenProps {
     onBack: () => void;
-}
-
-interface Message {
-    id: string;
-    sender: 'Victim' | 'Helper';
-    text: string;
-    timestamp: Date;
-}
-
-interface EmotionMetrics {
-    sadness: number;
-    anxiety: number;
-    relief: number;
-    hope: number;
-}
-
-interface UserProfile {
-    name: string;
-    age: string;
-    situation: string;
-    riskLevel: 'Bajo' | 'Medio' | 'Alto';
-    suggestedAction: string;
 }
 
 export const SimulationScreen: React.FC<SimulationScreenProps> = ({ onBack }) => {
@@ -43,7 +23,7 @@ export const SimulationScreen: React.FC<SimulationScreenProps> = ({ onBack }) =>
         suggestedAction: "Escuchar activamente"
     });
     const [isSimulating, setIsSimulating] = useState(false);
-    const [isTyping, setIsTyping] = useState(false); // New state for typing indicator
+    const [isTyping, setIsTyping] = useState(false); // Nuevo estado para el indicador de escritura
     const [error, setError] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const simulationRef = useRef<boolean>(false);
@@ -76,8 +56,10 @@ export const SimulationScreen: React.FC<SimulationScreenProps> = ({ onBack }) =>
     };
 
     const analyzeProfile = async (history: Message[]) => {
-        // Analyze every time (if there is history) for real-time updates
-        if (history.length === 0) return;
+        // Analizar solo cada pocos mensajes para ahorrar cuota
+        if (history.length === 0 || history.length % 3 !== 0) return;
+
+        if (!window.electronAPI) return;
 
         const analysisPrompt = [
             {
@@ -96,21 +78,21 @@ export const SimulationScreen: React.FC<SimulationScreenProps> = ({ onBack }) =>
         ];
 
         try {
-            const response = await window.electronAPI.chat(analysisPrompt);
+            const response = await aiService.sendMessage(analysisPrompt);
             const jsonMatch = response.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
                 const data = JSON.parse(jsonMatch[0]);
                 setProfile(prev => ({ ...prev, ...data }));
             }
         } catch (e) {
-            console.error("Error analyzing profile", e);
+            console.error("Error analizando perfil", e);
         }
     };
 
     const runSimulationStep = async (history: Message[]) => {
         if (!simulationRef.current) return;
 
-        // 1. VICTIM TURN
+        // 1. TURNO DE LA VÍCTIMA
         const victimPrompt = [
             {
                 role: 'system',
@@ -139,8 +121,9 @@ export const SimulationScreen: React.FC<SimulationScreenProps> = ({ onBack }) =>
         ];
 
         try {
-            const victimResponseStr = await window.electronAPI.chat(victimPrompt);
-            // Clean response to ensure JSON
+            const victimResponseStr = await aiService.sendMessage(victimPrompt);
+            
+            // Limpiar la respuesta para asegurar que es JSON
             const jsonMatch = victimResponseStr.match(/\{[\s\S]*\}/);
             let newVictimMsg: Message | null = null;
             let currentHistory = [...history];
@@ -164,7 +147,7 @@ export const SimulationScreen: React.FC<SimulationScreenProps> = ({ onBack }) =>
                     }
                 }
             } else {
-                // Fallback if not JSON but has text
+                // Alternativa si no es JSON pero tiene texto
                 if (victimResponseStr && victimResponseStr.trim().length > 0) {
                     newVictimMsg = {
                         id: Date.now().toString(),
@@ -179,14 +162,14 @@ export const SimulationScreen: React.FC<SimulationScreenProps> = ({ onBack }) =>
 
             if (!simulationRef.current) return;
 
-            // Trigger background analysis
+            // Disparar análisis en segundo plano
             analyzeProfile(currentHistory);
 
-            // Wait a bit before Helper responds (Simulate reading time)
+            // Esperar un poco antes de que el Ayudante responda (Simulación de tiempo de lectura)
             await new Promise(r => setTimeout(r, 1500));
 
-            // 2. HELPER TURN
-            if (newVictimMsg) { // Only respond if victim said something
+            // 2. TURNO DEL AYUDANTE
+            if (newVictimMsg) { // Solo responder si la víctima dijo algo
                 const helperPrompt = [
                     {
                         role: 'system',
@@ -214,19 +197,19 @@ export const SimulationScreen: React.FC<SimulationScreenProps> = ({ onBack }) =>
                     { role: 'user', content: newVictimMsg.text }
                 ];
 
-                // Show typing indicator
+                // Mostrar indicador de escritura
                 setIsTyping(true);
 
-                // Simulate "thinking" and network time
-                const helperResponseStr = await window.electronAPI.chat(helperPrompt);
+                // Simular tiempo de "pensamiento" y red
+                const helperResponseStr = await aiService.sendMessage(helperPrompt);
 
-                // Simulate "typing" time based on length
+                // Simular tiempo de "escritura" basado en la longitud
                 const typingDelay = Math.min(3000, 1000 + (helperResponseStr.length * 30));
                 await new Promise(r => setTimeout(r, typingDelay));
 
                 setIsTyping(false);
 
-                // Split response by delimiter to simulate multiple messages
+                // Separar la respuesta por delimitador para simular múltiples mensajes
                 const parts = helperResponseStr.split('|').map(p => p.trim()).filter(p => p.length > 0);
 
                 for (let i = 0; i < parts.length; i++) {
@@ -243,7 +226,7 @@ export const SimulationScreen: React.FC<SimulationScreenProps> = ({ onBack }) =>
                     setMessages(prev => [...prev, newHelperMsg]);
                     currentHistory.push(newHelperMsg);
 
-                    // Small delay between bubbles if multiple
+                    // Pequeña pausa entre burbujas si hay múltiples
                     if (i < parts.length - 1) {
                         setIsTyping(true);
                         await new Promise(r => setTimeout(r, 1000));
@@ -252,14 +235,14 @@ export const SimulationScreen: React.FC<SimulationScreenProps> = ({ onBack }) =>
                 }
             }
 
-            // Continue loop
+            // Continuar bucle
             if (simulationRef.current) {
                 setTimeout(() => runSimulationStep(currentHistory), 2000);
             }
 
         } catch (error: any) {
-            console.error("Simulation error:", error);
-            setError(`Error: ${error.message || "Unknown error"}`);
+            console.error("Error en simulación:", error);
+            setError(`Error: ${error.message || "Error desconocido"}`);
             setIsSimulating(false);
             setIsTyping(false);
             simulationRef.current = false;
@@ -282,7 +265,7 @@ export const SimulationScreen: React.FC<SimulationScreenProps> = ({ onBack }) =>
             suggestedAction: "Esperar más datos"
         });
 
-        // Start with a generic prompt to kick off the victim
+        // Comenzar con un prompt genérico para iniciar a la víctima
         runSimulationStep([]);
     };
 
@@ -294,7 +277,7 @@ export const SimulationScreen: React.FC<SimulationScreenProps> = ({ onBack }) =>
 
     return (
         <div className="flex h-screen bg-gray-100">
-            {/* Left Panel: Conversation */}
+            {/* Panel Izquierdo: Conversación */}
             <div className="flex-1 flex flex-col border-r border-gray-200">
                 <div className="bg-white p-4 shadow-sm flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -369,7 +352,7 @@ export const SimulationScreen: React.FC<SimulationScreenProps> = ({ onBack }) =>
                         </div>
                     ))}
 
-                    {/* Typing Indicator */}
+                    {/* Indicador de Escritura */}
                     {isTyping && (
                         <div className="flex justify-end">
                             <div className="bg-calm-blue-primary text-white p-4 rounded-2xl rounded-br-none shadow-sm max-w-[80%]">
@@ -386,11 +369,11 @@ export const SimulationScreen: React.FC<SimulationScreenProps> = ({ onBack }) =>
                 </div>
             </div>
 
-            {/* Right Panel: Metrics & Profile */}
+            {/* Panel Derecho: Métricas y Perfil */}
             <div className="w-80 bg-white shadow-lg flex flex-col h-full overflow-hidden">
                 <div className="p-6 overflow-y-auto space-y-8">
 
-                    {/* Metrics Section */}
+                    {/* Sección de Métricas */}
                     <div>
                         <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4">
                             <Activity className="w-5 h-5 text-calm-blue-primary" />
@@ -466,7 +449,7 @@ export const SimulationScreen: React.FC<SimulationScreenProps> = ({ onBack }) =>
 
                     <hr className="border-gray-100" />
 
-                    {/* Profile Section */}
+                    {/* Sección de Perfil */}
                     <div>
                         <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4">
                             <User className="w-5 h-5 text-calm-blue-primary" />
