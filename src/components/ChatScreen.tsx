@@ -1,15 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, ArrowLeft, Shield } from 'lucide-react';
+import { aiService } from '../services/ai.service';
+import type { Message } from '../models/interfaces';
 
 interface ChatScreenProps {
     onBack: () => void;
-}
-
-interface Message {
-    id: string;
-    text: string;
-    isUser: boolean;
-    timestamp: Date;
 }
 
 export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
@@ -48,14 +43,14 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
         setIsLoading(true);
 
         try {
-            // Call real AI via Electron IPC
+            // Llamar a la IA a través del servicio
             const messagesHistory = [
                 { role: 'system', content: 'Eres "Tu Amigo", un asistente de IA empático y cálido diseñado para ayudar a estudiantes que sufren acoso escolar. Tu objetivo es escuchar, validar sus sentimientos y ofrecer apoyo emocional. No juzgues. Si detectas riesgo grave, sugiere buscar ayuda de un adulto.' },
                 ...messages.map(m => ({ role: m.isUser ? 'user' : 'assistant', content: m.text })),
                 { role: 'user', content: inputText }
             ];
 
-            const responseText = await window.electronAPI.chat(messagesHistory);
+            const responseText = await aiService.sendMessage(messagesHistory);
 
             const aiResponse: Message = {
                 id: (Date.now() + 1).toString(),
@@ -64,10 +59,10 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
                 timestamp: new Date()
             };
             setMessages(prev => [...prev, aiResponse]);
-        } catch (error) {
+        } catch (error: any) {
             const errorMsg: Message = {
                 id: (Date.now() + 1).toString(),
-                text: "Lo siento, tuve un problema al conectar con mi cerebro. ¿Está Ollama encendido?",
+                text: error.message,
                 isUser: false,
                 timestamp: new Date()
             };
@@ -79,7 +74,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
 
     return (
         <div className="flex flex-col h-screen bg-gray-50">
-            {/* Header */}
+            {/* Cabecera */}
             <div className="bg-white shadow-sm p-4 flex items-center justify-between z-10">
                 <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                     <ArrowLeft className="w-6 h-6 text-gray-600" />
@@ -93,7 +88,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
                 </div>
             </div>
 
-            {/* Messages Area */}
+            {/* Área de Mensajes */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.map((msg) => (
                     <div
@@ -127,7 +122,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area */}
+            {/* Área de Entrada de Texto */}
             <div className="p-4 bg-white border-t border-gray-100">
                 <div className="flex gap-2 max-w-4xl mx-auto">
                     <input
