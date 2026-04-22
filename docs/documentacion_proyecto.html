@@ -1,0 +1,1966 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tu Amigo — Documentación del Proyecto</title>
+
+  <!-- Mermaid.js -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── VARIABLES ── */
+    :root {
+      --blue-primary:   #2196F3;
+      --blue-light:     #E3F2FD;
+      --blue-mid:       #BBDEFB;
+      --blue-dark:      #1565C0;
+      --green-light:    #E8F5E9;
+      --green-primary:  #43A047;
+      --green-dark:     #2E7D32;
+      --text-primary:   #37474F;
+      --text-secondary: #607D8B;
+      --text-muted:     #90A4AE;
+      --bg:             #FFFFFF;
+      --bg-subtle:      #F8FAFB;
+      --border:         #E0E7EF;
+      --radius:         8px;
+      --shadow-sm:      0 1px 3px rgba(33,150,243,.08), 0 1px 2px rgba(0,0,0,.04);
+      --shadow-md:      0 4px 16px rgba(33,150,243,.10), 0 2px 8px rgba(0,0,0,.06);
+      --shadow-lg:      0 8px 32px rgba(33,150,243,.12), 0 4px 12px rgba(0,0,0,.08);
+    }
+
+    /* ── RESET ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── BASE ── */
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text-primary);
+      background: var(--bg-subtle);
+    }
+
+    /* ── SIDEBAR NAV ── */
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: 260px;
+      height: 100vh;
+      background: #fff;
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-md);
+    }
+
+    .sidebar-brand {
+      padding: 24px 20px 16px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, var(--blue-primary), var(--blue-dark));
+      color: #fff;
+    }
+
+    .sidebar-brand-logo {
+      width: 40px; height: 40px;
+      background: rgba(255,255,255,.2);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; margin-bottom: 10px;
+    }
+
+    .sidebar-brand h2 {
+      font-size: 16px; font-weight: 700; letter-spacing: -.3px;
+    }
+
+    .sidebar-brand p {
+      font-size: 11px; opacity: .75; margin-top: 2px;
+    }
+
+    .sidebar-nav {
+      padding: 12px 0;
+      flex: 1;
+    }
+
+    .nav-group-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 14px 20px 4px;
+    }
+
+    .sidebar-nav a {
+      display: block;
+      padding: 7px 20px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      border-left: 3px solid transparent;
+      transition: all .15s;
+    }
+
+    .sidebar-nav a:hover {
+      color: var(--blue-primary);
+      background: var(--blue-light);
+      border-left-color: var(--blue-primary);
+    }
+
+    .sidebar-nav a.sub {
+      padding-left: 32px;
+      font-size: 12px;
+    }
+
+    /* ── MAIN CONTENT ── */
+    .main {
+      margin-left: 260px;
+      min-height: 100vh;
+    }
+
+    /* ── COVER ── */
+    .cover {
+      background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue-primary) 60%, #42A5F5 100%);
+      color: #fff;
+      padding: 80px 64px 64px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cover::before {
+      content: '';
+      position: absolute;
+      right: -60px; top: -60px;
+      width: 360px; height: 360px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.06);
+    }
+
+    .cover::after {
+      content: '';
+      position: absolute;
+      right: 80px; bottom: -80px;
+      width: 220px; height: 220px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.04);
+    }
+
+    .cover-badge {
+      display: inline-block;
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.3);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 24px;
+    }
+
+    .cover h1 {
+      font-size: 48px;
+      font-weight: 700;
+      letter-spacing: -1.5px;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+
+    .cover h1 span {
+      opacity: .6;
+    }
+
+    .cover-sub {
+      font-size: 18px;
+      opacity: .85;
+      max-width: 520px;
+      line-height: 1.5;
+      margin-bottom: 40px;
+    }
+
+    .cover-meta {
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+
+    .cover-meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .cover-meta-item .label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      opacity: .6;
+    }
+
+    .cover-meta-item .value {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    /* ── PAGE CONTENT ── */
+    .page-content {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 64px 48px;
+    }
+
+    /* ── SECTION ── */
+    .section {
+      margin-bottom: 80px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 32px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--blue-light);
+    }
+
+    .section-number {
+      width: 36px; height: 36px;
+      background: var(--blue-primary);
+      color: #fff;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .section h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -.4px;
+    }
+
+    .section h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--blue-dark);
+      margin: 28px 0 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section h3::before {
+      content: '';
+      display: block;
+      width: 4px; height: 16px;
+      background: var(--blue-primary);
+      border-radius: 2px;
+    }
+
+    .section h4 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 20px 0 10px;
+    }
+
+    .section p {
+      margin-bottom: 14px;
+      color: var(--text-secondary);
+    }
+
+    .section p:last-child { margin-bottom: 0; }
+
+    /* ── TABLES ── */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      margin: 16px 0 24px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead th {
+      background: var(--blue-primary);
+      color: #fff;
+      padding: 11px 16px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: .3px;
+      white-space: nowrap;
+    }
+
+    thead th:first-child { border-radius: var(--radius) 0 0 0; }
+    thead th:last-child  { border-radius: 0 var(--radius) 0 0; }
+
+    tbody tr { border-bottom: 1px solid var(--border); }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:nth-child(even) { background: var(--bg-subtle); }
+    tbody tr:hover { background: var(--blue-light); }
+
+    tbody td {
+      padding: 10px 16px;
+      vertical-align: top;
+      color: var(--text-secondary);
+    }
+
+    tbody td:first-child {
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+    }
+
+    /* ── USE CASE CARDS ── */
+    .usecase-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .usecase-card-header {
+      background: linear-gradient(135deg, var(--blue-primary), var(--blue-dark));
+      color: #fff;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .usecase-id {
+      background: rgba(255,255,255,.2);
+      border: 1px solid rgba(255,255,255,.3);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .usecase-card-header h4 {
+      font-size: 15px;
+      font-weight: 600;
+      margin: 0;
+      color: #fff;
+    }
+
+    .usecase-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .usecase-table tr { border-bottom: 1px solid var(--border); }
+    .usecase-table tr:last-child { border-bottom: none; }
+
+    .usecase-table td {
+      padding: 10px 16px;
+      vertical-align: top;
+    }
+
+    .usecase-table td:first-child {
+      font-weight: 600;
+      color: var(--blue-dark);
+      width: 140px;
+      background: var(--blue-light);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .usecase-table td:last-child {
+      color: var(--text-secondary);
+    }
+
+    /* ── MERMAID DIAGRAMS ── */
+    .diagram-wrap {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin: 16px 0 24px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow-x: auto;
+    }
+
+    .diagram-wrap .mermaid {
+      max-width: 100%;
+    }
+
+    .diagram-caption {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-style: italic;
+      margin-top: 8px;
+      margin-bottom: 24px;
+    }
+
+    /* ── INFO BOXES ── */
+    .info-box {
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin: 16px 0;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .info-box.blue  { background: var(--blue-light);  border-left: 4px solid var(--blue-primary); }
+    .info-box.green { background: var(--green-light); border-left: 4px solid var(--green-primary); }
+
+    .info-box-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+
+    .info-box-body p { color: var(--text-secondary); font-size: 13px; margin: 0; }
+    .info-box-body strong { color: var(--text-primary); }
+
+    /* ── STACK PILLS ── */
+    .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--blue-light);
+      color: var(--blue-dark);
+      border: 1px solid var(--blue-mid);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .pill.green {
+      background: var(--green-light);
+      color: var(--green-dark);
+      border-color: #A5D6A7;
+    }
+
+    /* ── STATUS BADGES ── */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .badge.done   { background: #E8F5E9; color: #2E7D32; }
+    .badge.todo   { background: #FFF3E0; color: #E65100; }
+    .badge.high   { background: #FFEBEE; color: #C62828; }
+    .badge.mid    { background: #FFF8E1; color: #F57F17; }
+    .badge.low    { background: var(--green-light); color: var(--green-dark); }
+
+    /* ── CODE BLOCK ── */
+    pre {
+      background: #263238;
+      color: #ECEFF1;
+      border-radius: var(--radius);
+      padding: 20px;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      margin: 12px 0 20px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--blue-light);
+      color: var(--blue-dark);
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+
+    pre code { background: none; color: inherit; padding: 0; }
+
+    /* ── TIMELINE ── */
+    .timeline {
+      position: relative;
+      padding-left: 28px;
+      margin: 16px 0;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 8px; top: 0; bottom: 0;
+      width: 2px;
+      background: var(--blue-mid);
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -24px; top: 6px;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--blue-primary);
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 2px var(--blue-primary);
+    }
+
+    .timeline-item-title {
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 13px;
+    }
+
+    .timeline-item-body {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    /* ── ARCHITECTURE LAYER ── */
+    .arch-layer {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      margin-bottom: -1px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .arch-layer:first-child { border-radius: var(--radius) var(--radius) 0 0; }
+    .arch-layer:last-child  { border-radius: 0 0 var(--radius) var(--radius); margin-bottom: 0; }
+
+    .arch-layer.l1 { background: linear-gradient(90deg, var(--blue-light), #fff); border-left: 4px solid var(--blue-primary); }
+    .arch-layer.l2 { background: linear-gradient(90deg, #F3E5F5, #fff); border-left: 4px solid #9C27B0; }
+    .arch-layer.l3 { background: linear-gradient(90deg, var(--green-light), #fff); border-left: 4px solid var(--green-primary); }
+
+    .arch-layer-icon { font-size: 22px; }
+    .arch-layer-info h5 { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .arch-layer-info p  { font-size: 12px; color: var(--text-secondary); margin: 0; }
+
+    .arch-arrow {
+      text-align: center;
+      font-size: 18px;
+      color: var(--text-muted);
+      margin: 2px 0;
+    }
+
+    /* ── FOOTER ── */
+    .doc-footer {
+      background: var(--text-primary);
+      color: rgba(255,255,255,.6);
+      text-align: center;
+      padding: 28px 48px;
+      font-size: 12px;
+      margin-left: 260px;
+    }
+
+    .doc-footer strong { color: rgba(255,255,255,.9); }
+
+    /* ── MERMAID SVG OVERRIDES ── */
+    /* Garantiza visibilidad independientemente del tema renderizado */
+
+    /* Flowchart: nodos por defecto → fondo azul claro, texto oscuro */
+    .mermaid svg .node rect,
+    .mermaid svg .node polygon,
+    .mermaid svg .node circle,
+    .mermaid svg .node ellipse {
+      fill: #E3F2FD;
+      stroke: #2196F3;
+      stroke-width: 1.5px;
+    }
+
+    /* Flowchart: texto dentro de nodos */
+    .mermaid svg .node .label,
+    .mermaid svg .node text,
+    .mermaid svg text {
+      fill: #1A237E !important;
+      color: #1A237E !important;
+    }
+
+    /* Flowchart: subgraphs / clusters */
+    .mermaid svg .cluster rect {
+      fill: #E3F2FD !important;
+      stroke: #90CAF9 !important;
+    }
+
+    .mermaid svg .cluster text,
+    .mermaid svg .cluster span {
+      fill: #1565C0 !important;
+      color: #1565C0 !important;
+      font-weight: 600;
+    }
+
+    /* Flowchart: flechas y etiquetas de aristas */
+    .mermaid svg .edgePath path {
+      stroke: #607D8B !important;
+      stroke-width: 1.5px;
+    }
+
+    .mermaid svg .edgeLabel rect {
+      fill: #F8FAFB !important;
+    }
+
+    .mermaid svg .edgeLabel span {
+      color: #37474F !important;
+    }
+
+    /* Sequence: actores */
+    .mermaid svg .actor {
+      fill: #2196F3 !important;
+      stroke: #1565C0 !important;
+    }
+
+    .mermaid svg .actor text {
+      fill: #FFFFFF !important;
+    }
+
+    /* Sequence: líneas de mensajes */
+    .mermaid svg .messageLine0,
+    .mermaid svg .messageLine1 {
+      stroke: #607D8B !important;
+    }
+
+    .mermaid svg .messageText {
+      fill: #37474F !important;
+    }
+
+    /* Sequence: notas */
+    .mermaid svg .note rect {
+      fill: #FFF8E1 !important;
+      stroke: #FFE082 !important;
+    }
+
+    .mermaid svg .noteText {
+      fill: #5D4037 !important;
+    }
+
+    /* Sequence: loop / par labels */
+    .mermaid svg .labelBox {
+      fill: #E3F2FD !important;
+      stroke: #90CAF9 !important;
+    }
+
+    .mermaid svg .labelText {
+      fill: #1565C0 !important;
+    }
+
+    /* Sequence: activations */
+    .mermaid svg rect.activation0,
+    .mermaid svg rect.activation1,
+    .mermaid svg rect.activation2 {
+      fill: #BBDEFB !important;
+      stroke: #2196F3 !important;
+    }
+
+    /* State diagrams */
+    .mermaid svg .stateGroup rect {
+      fill: #E3F2FD !important;
+      stroke: #2196F3 !important;
+    }
+
+    .mermaid svg .state-start,
+    .mermaid svg .state-end {
+      fill: #2196F3 !important;
+    }
+
+    /* Class diagrams */
+    .mermaid svg .classBox {
+      fill: #E3F2FD !important;
+      stroke: #2196F3 !important;
+    }
+
+    /* Gantt */
+    .mermaid svg .task {
+      fill: #2196F3 !important;
+      stroke: #1565C0 !important;
+    }
+
+    .mermaid svg .taskText {
+      fill: #FFFFFF !important;
+    }
+
+    .mermaid svg .taskTextOutsideRight,
+    .mermaid svg .taskTextOutsideLeft {
+      fill: #37474F !important;
+    }
+
+    .mermaid svg .done {
+      fill: #43A047 !important;
+    }
+
+    .mermaid svg .active0,
+    .mermaid svg .active1 {
+      fill: #FB8C00 !important;
+    }
+
+    .mermaid svg .grid .tick line {
+      stroke: #E0E7EF !important;
+    }
+
+    .mermaid svg .today {
+      stroke: #E53935 !important;
+    }
+
+    /* ── PRINT ── */
+    @media print {
+      .sidebar { display: none; }
+      .main, .doc-footer { margin-left: 0; }
+      .page-content { padding: 32px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     SIDEBAR
+════════════════════════════════════════ -->
+<nav class="sidebar">
+  <div class="sidebar-brand">
+    <div class="sidebar-brand-logo">🤝</div>
+    <h2>Tu Amigo</h2>
+    <p>Documentación del Proyecto</p>
+  </div>
+
+  <div class="sidebar-nav">
+    <div class="nav-group-label">Parte I — Análisis</div>
+    <a href="#requisitos">Requisitos</a>
+
+    <div class="nav-group-label">Parte II — Diseño</div>
+    <a href="#diseno-fisico">Diseño Físico / Lógico</a>
+    <a href="#diseno-funcional">Diseño Funcional</a>
+    <a href="#casos-de-uso" class="sub">→ Casos de Uso</a>
+    <a href="#diagrama-clases" class="sub">→ Diagrama de Clases</a>
+    <a href="#diagrama-secuencia" class="sub">→ Diagrama de Secuencia</a>
+    <a href="#diseno-interfaces">Diseño de Interfaces</a>
+    <a href="#material">Material Necesario</a>
+
+    <div class="nav-group-label">Parte III — Planificación</div>
+    <a href="#planificacion">Planificación Temporal</a>
+    <a href="#gestion">Áreas de Gestión</a>
+
+    <div class="nav-group-label">Parte IV — Implementación</div>
+    <a href="#implementacion">Implementación</a>
+    <a href="#grado">Grado de Consecución</a>
+    <a href="#innovacion">Innovación</a>
+
+    <div class="nav-group-label">Parte V — Conclusiones</div>
+    <a href="#resultados">Resultados y Conclusiones</a>
+    <a href="#bibliografia">Bibliografía</a>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════════════
+     MAIN
+════════════════════════════════════════ -->
+<main class="main">
+
+  <!-- COVER -->
+  <header class="cover">
+    <div class="cover-badge">Proyecto de Desarrollo de Aplicaciones Multiplataforma</div>
+    <h1>Tu Amigo<span> ·</span></h1>
+    <p class="cover-sub">
+      Aplicación de escritorio multiplataforma con inteligencia artificial para el apoyo
+      emocional de estudiantes víctimas de acoso escolar.
+    </p>
+    <div class="cover-meta">
+      <div class="cover-meta-item">
+        <span class="label">Curso</span>
+        <span class="value">2025 — 2026</span>
+      </div>
+      <div class="cover-meta-item">
+        <span class="label">Ciclo</span>
+        <span class="value">DAM / DAW</span>
+      </div>
+      <div class="cover-meta-item">
+        <span class="label">Tecnología principal</span>
+        <span class="value">Electron + React + Gemini AI</span>
+      </div>
+      <div class="cover-meta-item">
+        <span class="label">Estado del MVP</span>
+        <span class="value">✅ Completado</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- PAGE CONTENT -->
+  <div class="page-content">
+
+
+    <!-- ───────────────────────────────────────────────────────── -->
+    <!-- PARTE I — REQUISITOS -->
+    <!-- ───────────────────────────────────────────────────────── -->
+    <section class="section" id="requisitos">
+      <div class="section-header">
+        <div class="section-number">I</div>
+        <h2>Análisis de Requisitos</h2>
+      </div>
+
+      <div class="info-box blue">
+        <div class="info-box-icon">ℹ️</div>
+        <div class="info-box-body">
+          <p><strong>Tu Amigo</strong> es una aplicación de escritorio multiplataforma cuyo propósito es ofrecer un espacio seguro y confidencial donde estudiantes que sufren acoso escolar puedan expresarse libremente y recibir apoyo emocional inmediato a través de un asistente de inteligencia artificial empático.</p>
+        </div>
+      </div>
+
+      <h3>Requisitos Funcionales</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Descripción</th>
+              <th>Prioridad</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>RF-01</td><td>El sistema debe ofrecer un chat de soporte emocional impulsado por IA accesible desde la pantalla de bienvenida.</td><td><span class="badge high">Alta</span></td></tr>
+            <tr><td>RF-02</td><td>El sistema debe mostrar recursos de emergencia permanentemente disponibles: número 112 y línea ANAR 900 20 20 10.</td><td><span class="badge high">Alta</span></td></tr>
+            <tr><td>RF-03</td><td>La inteligencia artificial debe generar una respuesta empática en menos de 5 segundos bajo condiciones normales de red.</td><td><span class="badge high">Alta</span></td></tr>
+            <tr><td>RF-04</td><td>El sistema debe permitir visualizar una simulación educativa de conversación entre dos agentes IA (víctima y asistente).</td><td><span class="badge mid">Media</span></td></tr>
+            <tr><td>RF-05</td><td>La simulación debe mostrar métricas emocionales en tiempo real: tristeza, ansiedad, alivio y esperanza (escala 0–100).</td><td><span class="badge mid">Media</span></td></tr>
+            <tr><td>RF-06</td><td>El sistema debe extraer automáticamente un perfil del estudiante durante la simulación: nombre, edad, nivel de riesgo y acción recomendada.</td><td><span class="badge mid">Media</span></td></tr>
+            <tr><td>RF-07</td><td>El sistema debe permitir guardar la sesión de simulación completa como archivo JSON descargable.</td><td><span class="badge low">Baja</span></td></tr>
+            <tr><td>RF-08</td><td>La aplicación debe estar disponible y funcionar correctamente en Windows, macOS y Linux.</td><td><span class="badge high">Alta</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Requisitos No Funcionales</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Descripción</th>
+              <th>Categoría</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>RNF-01</td><td>La interfaz debe ser intuitiva y accesible para estudiantes de 12 a 18 años, sin requerir formación técnica previa.</td><td>Usabilidad</td></tr>
+            <tr><td>RNF-02</td><td>Los datos de la conversación no se almacenan en ningún servidor externo. Todo permanece en memoria local durante la sesión.</td><td>Privacidad / RGPD</td></tr>
+            <tr><td>RNF-03</td><td>El sistema requiere conexión a internet para el funcionamiento del chat y la simulación (API Gemini). Los recursos son accesibles sin conexión.</td><td>Disponibilidad</td></tr>
+            <tr><td>RNF-04</td><td>La comunicación con la API de Gemini debe realizarse de forma segura mediante HTTPS. La API Key no se expone al proceso renderer.</td><td>Seguridad</td></tr>
+            <tr><td>RNF-05</td><td>La paleta de colores debe transmitir calma y confianza: azul primario (#2196F3) y verde suave (#E8F5E9).</td><td>UI / UX</td></tr>
+            <tr><td>RNF-06</td><td>El sistema de comunicación IPC entre renderer y main process debe utilizar <code>contextBridge</code> con superficie de API mínima.</td><td>Seguridad</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+
+    <!-- ───────────────────────────────────────────────────────── -->
+    <!-- PARTE II — DISEÑO FÍSICO -->
+    <!-- ───────────────────────────────────────────────────────── -->
+    <section class="section" id="diseno-fisico">
+      <div class="section-header">
+        <div class="section-number">II</div>
+        <h2>Diseño Físico y Lógico</h2>
+      </div>
+
+      <h3>Arquitectura del Sistema</h3>
+      <p>La aplicación sigue un modelo de tres capas separadas físicamente: la capa de presentación (React en el proceso renderer de Electron), la capa de lógica/proceso (Node.js en el proceso principal de Electron) y el servicio externo de inteligencia artificial (Google Gemini). La comunicación entre las dos primeras capas se realiza de forma segura mediante IPC (<em>Inter-Process Communication</em>).</p>
+
+      <div class="arch-layer l1">
+        <div class="arch-layer-icon">🖥️</div>
+        <div class="arch-layer-info">
+          <h5>Capa de Presentación — React Renderer (Chromium)</h5>
+          <p>React 19 + TypeScript + TailwindCSS · WelcomeScreen · ChatScreen · ResourcesScreen · SimulationScreen</p>
+        </div>
+      </div>
+      <div class="arch-arrow">↕ IPC segura · <code>window.electronAPI.chat()</code> · contextBridge</div>
+      <div class="arch-layer l2">
+        <div class="arch-layer-icon">⚙️</div>
+        <div class="arch-layer-info">
+          <h5>Capa de Proceso Principal — Electron Main (Node.js)</h5>
+          <p>main.ts · ipcMain.handle('chat') · Normalización de historial · Gestión de ventana</p>
+        </div>
+      </div>
+      <div class="arch-arrow">↕ HTTPS / REST · SDK @google/generative-ai</div>
+      <div class="arch-layer l3">
+        <div class="arch-layer-icon">🤖</div>
+        <div class="arch-layer-info">
+          <h5>Servicio Externo de IA — Google Gemini 2.0 Flash</h5>
+          <p>Generación de respuestas empáticas · Análisis de perfil · Métricas emocionales · Simulación multi-agente</p>
+        </div>
+      </div>
+
+      <h3>Diagrama de Arquitectura</h3>
+      <div class="diagram-wrap">
+        <div class="mermaid">
+graph TB
+    subgraph ELECTRON["🖥️  Aplicación Electron (escritorio)"]
+        subgraph RENDERER["Proceso Renderer — Chromium"]
+            WS[WelcomeScreen]
+            CS[ChatScreen]
+            RS[ResourcesScreen]
+            SS[SimulationScreen]
+        end
+        subgraph PRELOAD["preload.ts — contextBridge"]
+            API["window.electronAPI\n.chat()"]
+        end
+        subgraph MAIN["Proceso Principal — Node.js"]
+            HANDLER["ipcMain.handle('chat')\nNormalización de historial"]
+        end
+    end
+
+    subgraph EXTERNAL["☁️  Servicio Externo"]
+        GEMINI["Google Gemini 2.0 Flash\n@google/generative-ai"]
+    end
+
+    CS -->|"mensajes"| API
+    SS -->|"prompts agentes"| API
+    API -->|"IPC"| HANDLER
+    HANDLER -->|"HTTPS"| GEMINI
+    GEMINI -->|"respuesta"| HANDLER
+    HANDLER -->|"IPC"| API
+    API -->|"texto IA"| CS
+    API -->|"texto IA"| SS
+
+    style ELECTRON fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+    style EXTERNAL fill:#E8F5E9,stroke:#43A047,stroke-width:2px
+        </div>
+      </div>
+      <p class="diagram-caption">Figura 1 — Arquitectura de tres capas de Tu Amigo</p>
+
+      <h3>Stack Tecnológico</h3>
+      <div class="pills">
+        <span class="pill">⚛️ React 19.2</span>
+        <span class="pill">🔷 TypeScript 5.9</span>
+        <span class="pill">⚡ Vite 7.2</span>
+        <span class="pill">🎨 TailwindCSS 3.4</span>
+        <span class="pill">🖥️ Electron 39</span>
+        <span class="pill green">🤖 Gemini 2.0 Flash</span>
+        <span class="pill green">📦 Electron Builder</span>
+        <span class="pill green">🔗 Lucide React</span>
+      </div>
+    </section>
+
+
+    <!-- ───────────────────────────────────────────────────────── -->
+    <!-- DISEÑO FUNCIONAL -->
+    <!-- ───────────────────────────────────────────────────────── -->
+    <section class="section" id="diseno-funcional">
+      <div class="section-header">
+        <div class="section-number">II</div>
+        <h2>Diseño Funcional</h2>
+      </div>
+      <p>El diseño funcional describe el comportamiento observable del sistema desde el punto de vista del usuario. Se documenta mediante casos de uso, diagramas de clases y diagramas de secuencia.</p>
+    </section>
+
+
+    <!-- ───────────────────────────────────────────────────────── -->
+    <!-- CASOS DE USO -->
+    <!-- ───────────────────────────────────────────────────────── -->
+    <section class="section" id="casos-de-uso">
+      <h3 style="margin-top:0">Casos de Uso</h3>
+      <p>
+        Los casos de uso representan las acciones principales que el usuario puede realizar sobre el sistema.
+        Para cada caso se especifica la descripción, los actores implicados, las precondiciones, el flujo normal
+        de ejecución, las postcondiciones y los flujos alternativos.
+      </p>
+
+      <h3>Diagrama de Casos de Uso</h3>
+      <div class="diagram-wrap">
+        <div class="mermaid">
+flowchart LR
+    Actor(["👤\nEstudiante"])
+    ActorD(["👩‍🏫\nDocente"])
+
+    subgraph SYS["Sistema Tu Amigo"]
+        CU01["🗨️ CU-01\nIniciar chat de apoyo"]
+        CU02["📋 CU-02\nConsultar recursos"]
+        CU03["🎭 CU-03\nVer simulación IA"]
+        CU04["💾 CU-04\nGuardar sesión JSON"]
+        CU05["📊 CU-05\nVer métricas emocionales"]
+    end
+
+    Actor --> CU01
+    Actor --> CU02
+    Actor --> CU03
+    ActorD --> CU03
+    ActorD --> CU04
+    CU03 --> CU05
+    CU03 --> CU04
+
+    style SYS fill:#E3F2FD,stroke:#2196F3,stroke-width:2px
+        </div>
+      </div>
+      <p class="diagram-caption">Figura 2 — Diagrama de casos de uso del sistema</p>
+
+      <!-- CU-01 -->
+      <div class="usecase-card">
+        <div class="usecase-card-header">
+          <span class="usecase-id">CU-01</span>
+          <h4>Iniciar conversación de apoyo emocional</h4>
+        </div>
+        <table class="usecase-table">
+          <tr>
+            <td>Descripción</td>
+            <td>El estudiante inicia una conversación con el asistente IA para recibir apoyo emocional ante una situación de acoso escolar. El sistema responde de forma empática, sin juzgar, adaptando el tono al estado emocional percibido.</td>
+          </tr>
+          <tr>
+            <td>Actores</td>
+            <td>Estudiante (usuario principal de la app)</td>
+          </tr>
+          <tr>
+            <td>Precondiciones</td>
+            <td>La aplicación está abierta y existe conexión a internet para acceder a la API de Gemini.</td>
+          </tr>
+          <tr>
+            <td>Flujo normal</td>
+            <td>
+              1. El estudiante pulsa "Hablar con alguien" en la pantalla de bienvenida.<br/>
+              2. Se carga la pantalla de chat con un mensaje inicial de la IA: <em>"Hola. Siento que estés pasando por un momento difícil. ¿Qué es lo que más te preocupa hoy?"</em><br/>
+              3. El estudiante escribe su mensaje y pulsa enviar.<br/>
+              4. La app envía el historial de mensajes al proceso principal de Electron mediante IPC.<br/>
+              5. El proceso principal llama a la API de Gemini con el prompt de sistema empático.<br/>
+              6. Gemini genera una respuesta contextualizada y la devuelve.<br/>
+              7. La respuesta aparece en la pantalla de chat.<br/>
+              8. El ciclo se repite hasta que el usuario cierra el chat o vuelve a la pantalla principal.
+            </td>
+          </tr>
+          <tr>
+            <td>Postcondiciones</td>
+            <td>La conversación se mantiene en memoria durante la sesión activa. No se persiste en disco ni en servidores externos.</td>
+          </tr>
+          <tr>
+            <td>Flujo alternativo</td>
+            <td>
+              <strong>FA-01</strong>: Si no hay conexión a internet, el sistema muestra un mensaje de error y sugiere usar los recursos disponibles sin conexión.<br/>
+              <strong>FA-02</strong>: Si la API devuelve un error, se muestra un aviso al usuario y se permite reintentar.
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- CU-02 -->
+      <div class="usecase-card">
+        <div class="usecase-card-header">
+          <span class="usecase-id">CU-02</span>
+          <h4>Consultar recursos de ayuda</h4>
+        </div>
+        <table class="usecase-table">
+          <tr>
+            <td>Descripción</td>
+            <td>El estudiante accede a la pantalla de recursos para consultar información de emergencia, guías sobre ciberacoso y técnicas de relajación.</td>
+          </tr>
+          <tr>
+            <td>Actores</td>
+            <td>Estudiante</td>
+          </tr>
+          <tr>
+            <td>Precondiciones</td>
+            <td>La aplicación está abierta. No requiere conexión a internet (contenido estático).</td>
+          </tr>
+          <tr>
+            <td>Flujo normal</td>
+            <td>
+              1. El estudiante pulsa "Ver recursos" en la pantalla de bienvenida.<br/>
+              2. Se muestra la pantalla de recursos con: números de emergencia (112, ANAR 900 20 20 10), guía sobre ciberacoso y técnicas de relajación.<br/>
+              3. El estudiante lee la información disponible.<br/>
+              4. El estudiante puede volver a la pantalla de bienvenida pulsando el botón de retorno.
+            </td>
+          </tr>
+          <tr>
+            <td>Postcondiciones</td>
+            <td>Ninguna. La pantalla es únicamente informativa y estática.</td>
+          </tr>
+          <tr>
+            <td>Flujo alternativo</td>
+            <td>No aplica.</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- CU-03 -->
+      <div class="usecase-card">
+        <div class="usecase-card-header">
+          <span class="usecase-id">CU-03</span>
+          <h4>Visualizar simulación educativa de IA</h4>
+        </div>
+        <table class="usecase-table">
+          <tr>
+            <td>Descripción</td>
+            <td>El usuario visualiza una simulación educativa en tiempo real donde dos agentes IA interactúan: "Alex" (estudiante víctima de 14 años) y "Tu Amigo" (asistente de apoyo). Las métricas emocionales y el perfil del estudiante se actualizan automáticamente.</td>
+          </tr>
+          <tr>
+            <td>Actores</td>
+            <td>Estudiante, Docente / Orientador</td>
+          </tr>
+          <tr>
+            <td>Precondiciones</td>
+            <td>La aplicación está abierta y existe conexión a internet para las llamadas a la API de Gemini.</td>
+          </tr>
+          <tr>
+            <td>Flujo normal</td>
+            <td>
+              1. El usuario pulsa "Simulación IA" en la pantalla de bienvenida.<br/>
+              2. Se carga la pantalla con dos paneles: conversación (izquierda) y métricas + perfil (derecha).<br/>
+              3. El usuario pulsa "Iniciar Simulación".<br/>
+              4. El agente víctima ("Alex") genera un mensaje basado en su estado emocional actual.<br/>
+              5. En paralelo, se realiza análisis de perfil del estudiante mediante una segunda llamada a Gemini.<br/>
+              6. Tras 1,5 segundos, el asistente ("Tu Amigo") responde con apoyo empático (máx. 15 palabras).<br/>
+              7. Las barras de métricas emocionales (tristeza, ansiedad, alivio, esperanza) se actualizan en tiempo real.<br/>
+              8. El ciclo se repite cada 2 segundos de forma automática.<br/>
+              9. El usuario puede detener la simulación en cualquier momento.
+            </td>
+          </tr>
+          <tr>
+            <td>Postcondiciones</td>
+            <td>La sesión puede ser guardada como archivo JSON descargable (ver CU-04).</td>
+          </tr>
+          <tr>
+            <td>Flujo alternativo</td>
+            <td>
+              <strong>FA-01</strong>: Si la API falla durante el bucle, la simulación se detiene y se muestra el error al usuario.<br/>
+              <strong>FA-02</strong>: Si el análisis de perfil falla, las métricas anteriores se mantienen.
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- CU-04 -->
+      <div class="usecase-card">
+        <div class="usecase-card-header">
+          <span class="usecase-id">CU-04</span>
+          <h4>Guardar sesión de simulación</h4>
+        </div>
+        <table class="usecase-table">
+          <tr>
+            <td>Descripción</td>
+            <td>El usuario descarga un registro completo de la simulación en formato JSON para su posterior análisis o archivo.</td>
+          </tr>
+          <tr>
+            <td>Actores</td>
+            <td>Estudiante, Docente / Orientador</td>
+          </tr>
+          <tr>
+            <td>Precondiciones</td>
+            <td>Se ha ejecutado al menos un ciclo completo de simulación (hay datos disponibles).</td>
+          </tr>
+          <tr>
+            <td>Flujo normal</td>
+            <td>
+              1. El usuario pulsa "Guardar" durante o después de la simulación.<br/>
+              2. El sistema genera un objeto JSON con: timestamp ISO 8601, perfil del estudiante, métricas emocionales y lista completa de mensajes.<br/>
+              3. El navegador/sistema operativo descarga el archivo automáticamente.
+            </td>
+          </tr>
+          <tr>
+            <td>Postcondiciones</td>
+            <td>El archivo JSON queda guardado localmente en el sistema del usuario.</td>
+          </tr>
+          <tr>
+            <td>Flujo alternativo</td>
+            <td>No aplica.</td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+
+    <!-- ───────────────────────────────────────────────────────── -->
+    <!-- DIAGRAMA DE CLASES -->
+    <!-- ───────────────────────────────────────────────────────── -->
+    <section class="section" id="diagrama-clases">
+      <h3 style="margin-top:0">Diagrama de Clases</h3>
+      <p>
+        El diagrama de clases representa las entidades de datos principales que maneja el sistema, sus atributos
+        y las relaciones entre ellas. Dado que el MVP no dispone de base de datos, todas las entidades viven
+        en memoria durante la sesión. Las interfaces TypeScript actúan como contratos de clase.
+      </p>
+
+      <div class="diagram-wrap">
+        <div class="mermaid">
+classDiagram
+    class Message {
+        +String id
+        +String text
+        +Boolean isUser
+        +String sender
+        +Date timestamp
+        +getText() String
+    }
+
+    class Conversation {
+        +Message[] messages
+        +String systemPrompt
+        +addMessage(msg Message) void
+        +getHistory() Message[]
+        +clear() void
+    }
+
+    class GeminiClient {
+        -String apiKey
+        -String model
+        +sendMessages(history) String
+        +normalizeHistory(msgs) Object[]
+    }
+
+    class EmotionMetrics {
+        +Number sadness
+        +Number anxiety
+        +Number relief
+        +Number hope
+        +update(values) void
+        +toJSON() Object
+    }
+
+    class UserProfile {
+        +String name
+        +String age
+        +String situation
+        +String riskLevel
+        +String suggestedAction
+        +extract(text) void
+        +toJSON() Object
+    }
+
+    class SimulationSession {
+        +String timestamp
+        +UserProfile profile
+        +EmotionMetrics metrics
+        +Message[] messages
+        +save() void
+        +toJSON() String
+    }
+
+    class ElectronAPI {
+        +ping() Promise
+        +chat(messages) Promise~String~
+    }
+
+    Conversation "1" o-- "0..*" Message : contiene
+    Conversation --> GeminiClient : usa
+    SimulationSession "1" *-- "1" UserProfile : tiene
+    SimulationSession "1" *-- "1" EmotionMetrics : tiene
+    SimulationSession "1" o-- "0..*" Message : registra
+    ElectronAPI --> GeminiClient : delega en
+        </div>
+      </div>
+      <p class="diagram-caption">Figura 3 — Diagrama de clases del sistema Tu Amigo</p>
+
+      <h4>Descripción de entidades</h4>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Entidad</th><th>Responsabilidad</th><th>Relación</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Message</td><td>Representa un único mensaje en el chat o en la simulación. Diferencia si es del usuario/IA y el rol del emisor.</td><td>Agregado en Conversation y SimulationSession</td></tr>
+            <tr><td>Conversation</td><td>Gestiona el historial completo del chat y el prompt de sistema. Normaliza el historial antes de enviarlo a la API.</td><td>Usa GeminiClient; contiene Message[]</td></tr>
+            <tr><td>GeminiClient</td><td>Encapsula toda la lógica de comunicación con la API de Google Generative AI.</td><td>Delegado por ElectronAPI y Conversation</td></tr>
+            <tr><td>EmotionMetrics</td><td>Almacena y actualiza las métricas emocionales del agente víctima durante la simulación (0–100).</td><td>Compuesta en SimulationSession</td></tr>
+            <tr><td>UserProfile</td><td>Almacena el perfil extraído automáticamente del estudiante: nombre, edad, situación, nivel de riesgo y acción sugerida.</td><td>Compuesta en SimulationSession</td></tr>
+            <tr><td>SimulationSession</td><td>Agrega todos los datos de una sesión de simulación para su exportación como JSON.</td><td>Contiene Message[], UserProfile, EmotionMetrics</td></tr>
+            <tr><td>ElectronAPI</td><td>Interfaz IPC expuesta al renderer mediante contextBridge. Superficie mínima de API.</td><td>Delega en GeminiClient</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+
+    <!-- ───────────────────────────────────────────────────────── -->
+    <!-- DIAGRAMA DE SECUENCIA -->
+    <!-- ───────────────────────────────────────────────────────── -->
+    <section class="section" id="diagrama-secuencia">
+      <h3 style="margin-top:0">Diagramas de Secuencia</h3>
+      <p>
+        Los diagramas de secuencia muestran el flujo temporal de mensajes entre los componentes del sistema
+        para los casos de uso más relevantes.
+      </p>
+
+      <h4>Secuencia CU-01 — Enviar mensaje en el chat</h4>
+      <div class="diagram-wrap">
+        <div class="mermaid">
+sequenceDiagram
+    actor E as 👤 Estudiante
+    participant WS as WelcomeScreen
+    participant CS as ChatScreen
+    participant PRE as preload.ts
+    participant MAIN as Electron Main
+    participant API as Gemini API
+
+    E->>WS: Click "Hablar con alguien"
+    WS->>CS: navegar a ChatScreen
+    CS-->>E: Muestra mensaje inicial de bienvenida IA
+
+    E->>CS: Escribe mensaje y pulsa enviar
+    CS->>CS: Añade mensaje a historial
+    CS->>PRE: window.electronAPI.chat(historial)
+    PRE->>MAIN: ipcRenderer.invoke('chat', msgs)
+    MAIN->>MAIN: normalizeHistory(msgs)
+    MAIN->>API: generateContent(systemPrompt + history)
+    API-->>MAIN: respuesta empática (texto)
+    MAIN-->>PRE: resolve(texto)
+    PRE-->>CS: Promise.resolve(texto)
+    CS-->>E: Muestra burbuja con respuesta IA
+        </div>
+      </div>
+      <p class="diagram-caption">Figura 4 — Secuencia de envío de mensaje en el chat de apoyo</p>
+
+      <h4>Secuencia CU-03 — Ciclo de simulación multi-agente</h4>
+      <div class="diagram-wrap">
+        <div class="mermaid">
+sequenceDiagram
+    actor U as 👤 Usuario
+    participant SS as SimulationScreen
+    participant PRE as preload.ts
+    participant MAIN as Electron Main
+    participant API as Gemini API
+
+    U->>SS: Click "Iniciar Simulación"
+    SS->>SS: setRunning(true)
+
+    loop Cada ciclo (2 s)
+        SS->>PRE: chat(promptVíctima + estadoEmocional)
+        PRE->>MAIN: IPC chat
+        MAIN->>API: Turno agente "Alex" (víctima)
+        API-->>MAIN: {texto, metrics: {sadness, anxiety, relief, hope}}
+
+        par Análisis paralelo
+            MAIN->>API: Análisis de perfil (JSON estructurado)
+            API-->>MAIN: {name, age, situation, riskLevel, action}
+        end
+
+        MAIN-->>PRE: respuesta Alex + métricas
+        PRE-->>SS: resolve()
+        SS->>SS: Actualiza barras EmotionMetrics
+        SS->>SS: Actualiza UserProfile panel
+
+        Note over SS: Pausa 1,5 s (typing delay)
+
+        SS->>PRE: chat(promptAsistente)
+        PRE->>MAIN: IPC chat
+        MAIN->>API: Turno agente "Tu Amigo" (asistente)
+        API-->>MAIN: respuesta empática (≤15 palabras)
+        MAIN-->>PRE: texto asistente
+        PRE-->>SS: resolve()
+        SS-->>U: Muestra mensajes + métricas actualizadas
+    end
+
+    U->>SS: Click "Detener"
+    SS->>SS: setRunning(false)
+        </div>
+      </div>
+      <p class="diagram-caption">Figura 5 — Secuencia del bucle de simulación multi-agente</p>
+    </section>
+
+
+    <!-- ───────────────────────────────────────────────────────── -->
+    <!-- DISEÑO DE INTERFACES -->
+    <!-- ───────────────────────────────────────────────────────── -->
+    <section class="section" id="diseno-interfaces">
+      <div class="section-header">
+        <div class="section-number">II</div>
+        <h2>Diseño de Interfaces</h2>
+      </div>
+
+      <p>La aplicación cuenta con 4 pantallas principales comunicadas mediante un sistema de navegación gestionado por estado React en el componente raíz <code>App.tsx</code>.</p>
+
+      <div class="diagram-wrap">
+        <div class="mermaid">
+stateDiagram-v2
+    [*] --> WelcomeScreen
+
+    WelcomeScreen --> ChatScreen : "Hablar con alguien"
+    WelcomeScreen --> ResourcesScreen : "Ver recursos"
+    WelcomeScreen --> SimulationScreen : "Simulación IA"
+
+    ChatScreen --> WelcomeScreen : Volver
+    ResourcesScreen --> WelcomeScreen : Volver
+    SimulationScreen --> WelcomeScreen : Volver
+        </div>
+      </div>
+      <p class="diagram-caption">Figura 6 — Máquina de estados de navegación entre pantallas</p>
+
+      <h3>Descripción de Pantallas</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Pantalla</th><th>Componente</th><th>Descripción</th><th>Elementos principales</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Bienvenida</td>
+              <td><code>WelcomeScreen.tsx</code></td>
+              <td>Punto de entrada de la aplicación. Transmite seguridad y calma desde el primer momento.</td>
+              <td>Logo, nombre "Tu Amigo", subtítulo, 3 botones de acceso con iconos</td>
+            </tr>
+            <tr>
+              <td>Chat</td>
+              <td><code>ChatScreen.tsx</code></td>
+              <td>Conversación uno a uno con el asistente IA empático. Diseño similar a apps de mensajería familiar para el usuario joven.</td>
+              <td>Barra superior con botón "Volver", burbujas de mensajes (usuario: azul derecha; IA: gris izquierda), indicador de escritura "...", input + botón enviar</td>
+            </tr>
+            <tr>
+              <td>Recursos</td>
+              <td><code>ResourcesScreen.tsx</code></td>
+              <td>Pantalla informativa estática con recursos de ayuda inmediata. No requiere conexión.</td>
+              <td>Tarjeta roja (112, ANAR), tarjeta azul (guía ciberacoso), tarjeta verde (relajación), botón retorno</td>
+            </tr>
+            <tr>
+              <td>Simulación</td>
+              <td><code>SimulationScreen.tsx</code></td>
+              <td>Demostración educativa del sistema de IA para docentes y estudiantes. Muestra el potencial del asistente en tiempo real.</td>
+              <td>Panel izquierdo (conversación Alex / Tu Amigo), panel derecho (barras de métricas emocionales + tarjeta de perfil), botones Iniciar / Detener / Guardar</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="info-box green">
+        <div class="info-box-icon">🎨</div>
+        <div class="info-box-body">
+          <p><strong>Criterios de diseño:</strong> Paleta calmante (azul primario <code>#2196F3</code> · verde suave <code>#E8F5E9</code> · texto neutro <code>#37474F</code>). Tipografía legible, tamaño mínimo 14px. Sin elementos agresivos ni alertas estridentes. Todos los textos en español de España.</p>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ───────────────────────────────────────────────────────── -->
+    <!-- MATERIAL NECESARIO -->
+    <!-- ───────────────────────────────────────────────────────── -->
+    <section class="section" id="material">
+      <div class="section-header">
+        <div class="section-number">II</div>
+        <h2>Material Necesario</h2>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Recurso</th><th>Descripción</th><th>Versión</th><th>Coste</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Ordenador</td><td>Para desarrollo y ejecución. Compatible con macOS, Windows o Linux.</td><td>—</td><td>Disponible</td></tr>
+            <tr><td>Node.js + npm</td><td>Entorno de ejecución JavaScript para el proceso principal y herramientas de build.</td><td>≥ 18 LTS</td><td>Gratuito</td></tr>
+            <tr><td>Google Gemini API Key</td><td>Clave de acceso a la API de Google Generative AI para el modelo Gemini 2.0 Flash.</td><td>Gemini 2.0</td><td>Gratuito (cuota gratuita)</td></tr>
+            <tr><td>Electron</td><td>Framework para crear aplicaciones de escritorio multiplataforma con tecnologías web.</td><td>39.2.3</td><td>Gratuito (open source)</td></tr>
+            <tr><td>React</td><td>Librería de interfaz de usuario basada en componentes.</td><td>19.2.0</td><td>Gratuito (open source)</td></tr>
+            <tr><td>TypeScript</td><td>Superset tipado de JavaScript que mejora la robustez del código.</td><td>5.9.3</td><td>Gratuito (open source)</td></tr>
+            <tr><td>Vite</td><td>Herramienta de build ultrarrápida con servidor de desarrollo HMR.</td><td>7.2.4</td><td>Gratuito (open source)</td></tr>
+            <tr><td>TailwindCSS</td><td>Framework de CSS utilitario para construir la interfaz.</td><td>3.4.1</td><td>Gratuito (open source)</td></tr>
+            <tr><td>Electron Builder</td><td>Empaqueta la app como instaladores .exe, .dmg o .AppImage.</td><td>26.0.12</td><td>Gratuito (open source)</td></tr>
+            <tr><td>Conexión a internet</td><td>Necesaria durante el uso del chat y la simulación para las llamadas a la API de Gemini.</td><td>—</td><td>Disponible</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+
+    <!-- ───────────────────────────────────────────────────────── -->
+    <!-- PARTE III — PLANIFICACIÓN -->
+    <!-- ───────────────────────────────────────────────────────── -->
+    <section class="section" id="planificacion">
+      <div class="section-header">
+        <div class="section-number">III</div>
+        <h2>Planificación Temporal</h2>
+      </div>
+
+      <div class="diagram-wrap">
+        <div class="mermaid">
+gantt
+    title Planificación del Proyecto Tu Amigo
+    dateFormat  YYYY-MM-DD
+    axisFormat  %d/%m
+
+    section Análisis
+    Definición de requisitos           :done, a1, 2025-09-01, 3d
+    Casos de uso y diseño              :done, a2, after a1, 2d
+
+    section Prototipo
+    Wireframes e interfaz visual       :done, p1, after a2, 3d
+
+    section Implementación
+    WelcomeScreen + ResourcesScreen    :done, i1, after p1, 4d
+    ChatScreen + integración Gemini    :done, i2, after i1, 5d
+    SimulationScreen + métricas        :done, i3, after i2, 5d
+
+    section Testing
+    Pruebas funcionales                :done, t1, after i3, 4d
+    Pruebas de usabilidad              :done, t2, after t1, 3d
+
+    section Documentación
+    Memoria del proyecto               :active, d1, after t2, 3d
+        </div>
+      </div>
+      <p class="diagram-caption">Figura 7 — Diagrama de Gantt del proyecto</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Fase</th><th>Tareas principales</th><th>Horas estimadas</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1. Análisis</td><td>Definición de requisitos, casos de uso, diseño del sistema</td><td>5 h</td></tr>
+            <tr><td>2. Prototipo</td><td>Wireframes, paleta de colores, diseño de componentes</td><td>3 h</td></tr>
+            <tr><td>3. MVP Frontend</td><td>WelcomeScreen, ChatScreen, ResourcesScreen</td><td>10 h</td></tr>
+            <tr><td>4. Integración IA</td><td>Electron main process, IPC bridge, API Gemini, normalización de historial</td><td>8 h</td></tr>
+            <tr><td>5. Simulación</td><td>SimulationScreen, métricas emocionales, perfil de usuario, bucle multi-agente</td><td>7 h</td></tr>
+            <tr><td>6. Testing</td><td>Pruebas funcionales y de usabilidad</td><td>7 h</td></tr>
+            <tr><td>7. Documentación</td><td>Memoria del proyecto, diagramas, casos de uso</td><td>3 h</td></tr>
+            <tr><td><strong>Total</strong></td><td></td><td><strong>43 h</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+
+    <!-- ───────────────────────────────────────────────────────── -->
+    <!-- GESTIÓN DEL PROYECTO -->
+    <!-- ───────────────────────────────────────────────────────── -->
+    <section class="section" id="gestion">
+      <div class="section-header">
+        <div class="section-number">III</div>
+        <h2>Áreas de Gestión del Proyecto</h2>
+      </div>
+
+      <h3>Gestión del Alcance</h3>
+      <p>
+        El proyecto se delimitó explícitamente al desarrollo del MVP de escritorio. Las funcionalidades de
+        backend (autenticación, base de datos, generación de informes PDF, notificación a centros educativos)
+        quedaron fuera del alcance actual y se documentan como hoja de ruta para versiones futuras.
+      </p>
+
+      <h3>Gestión de Riesgos</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Riesgo</th><th>Probabilidad</th><th>Impacto</th><th>Mitigación</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Dependencia de API externa (Gemini)</td>
+              <td>Media</td>
+              <td>Alto</td>
+              <td>Mensajes de error claros al usuario; posibilidad de cambiar modelo en configuración.</td>
+            </tr>
+            <tr>
+              <td>Exposición de datos sensibles de menores</td>
+              <td>Baja</td>
+              <td>Muy alto</td>
+              <td>Toda la conversación permanece en memoria local. La API Key se gestiona exclusivamente en el proceso principal, nunca en el renderer.</td>
+            </tr>
+            <tr>
+              <td>Impacto emocional negativo en el usuario</td>
+              <td>Baja</td>
+              <td>Alto</td>
+              <td>Prompt de sistema diseñado para derivar a profesionales en situaciones de riesgo alto. Recursos de emergencia siempre accesibles.</td>
+            </tr>
+            <tr>
+              <td>Incompatibilidad entre versiones de Electron</td>
+              <td>Baja</td>
+              <td>Medio</td>
+              <td>Versiones fijadas en <code>package.json</code>. Tests en Windows, macOS y Linux.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Gestión de la Calidad</h3>
+      <p>Para garantizar la calidad del código se aplicaron las siguientes medidas:</p>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-item-title">TypeScript estricto</div>
+          <div class="timeline-item-body">Tipado completo de todas las interfaces y componentes. Configuración <code>strict: true</code> en <code>tsconfig.json</code>.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-item-title">ESLint 9</div>
+          <div class="timeline-item-body">Reglas de linting configuradas para React + TypeScript. Integrado en el flujo de desarrollo.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-item-title">ErrorBoundary React</div>
+          <div class="timeline-item-body">Componente <code>ErrorBoundary.tsx</code> que captura errores en el árbol de componentes y muestra una interfaz de fallback amigable.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-item-title">Seguridad IPC</div>
+          <div class="timeline-item-body">Superficie de API mínima expuesta mediante <code>contextBridge</code>. El renderer nunca accede directamente a módulos de Node.js.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-item-title">Pruebas de usabilidad</div>
+          <div class="timeline-item-body">Validación del flujo de usuario con el perfil objetivo (estudiantes de 12–18 años).</div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ───────────────────────────────────────────────────────── -->
+    <!-- PARTE IV — IMPLEMENTACIÓN -->
+    <!-- ───────────────────────────────────────────────────────── -->
+    <section class="section" id="implementacion">
+      <div class="section-header">
+        <div class="section-number">IV</div>
+        <h2>Implementación</h2>
+      </div>
+
+      <h3>Estructura del Proyecto</h3>
+      <pre><code>TuAmigo/
+└── tuamigo-desktop/
+    ├── electron/
+    │   ├── main.ts          # Ventana, IPC handler, llamada a Gemini
+    │   └── preload.ts       # contextBridge → window.electronAPI
+    ├── src/
+    │   ├── App.tsx           # Enrutamiento entre pantallas (estado React)
+    │   ├── components/
+    │   │   ├── WelcomeScreen.tsx
+    │   │   ├── ChatScreen.tsx
+    │   │   ├── ResourcesScreen.tsx
+    │   │   ├── SimulationScreen.tsx
+    │   │   └── ErrorBoundary.tsx
+    │   └── electron.d.ts    # Tipos para window.electronAPI
+    ├── .env                  # GEMINI_API_KEY (nunca en el renderer)
+    ├── package.json
+    ├── vite.config.ts
+    └── tailwind.config.js</code></pre>
+
+      <h3>Fases de Implementación</h3>
+
+      <h4>1. Configuración del entorno Electron + React</h4>
+      <p>
+        Se configuró el proyecto con Vite como bundler del proceso renderer y TypeScript para ambos procesos (renderer y main).
+        Se estableció la configuración de <code>concurrently</code> para arrancar Vite y Electron en paralelo durante el desarrollo.
+      </p>
+
+      <h4>2. Arquitectura IPC segura</h4>
+      <p>
+        Se implementó el puente seguro <code>preload.ts</code> utilizando <code>contextBridge.exposeInMainWorld()</code> para
+        exponer únicamente la función <code>chat()</code> al renderer. Esta superficie mínima de API garantiza que el proceso
+        renderer no tenga acceso a módulos de Node.js ni a la API Key de Gemini.
+      </p>
+
+      <h4>3. Integración con Google Gemini</h4>
+      <p>
+        El proceso principal gestiona todas las llamadas a <code>@google/generative-ai</code>. Se implementó un algoritmo
+        de <strong>normalización del historial</strong> de mensajes que garantiza el formato requerido por Gemini: alternancia
+        estricta de roles <code>user</code> / <code>model</code>, sin mensajes consecutivos del mismo rol, y siempre
+        comenzando por el rol <code>user</code>.
+      </p>
+
+      <h4>4. Pantallas React con hooks</h4>
+      <p>
+        Los cuatro componentes principales (<code>WelcomeScreen</code>, <code>ChatScreen</code>, <code>ResourcesScreen</code>,
+        <code>SimulationScreen</code>) se implementaron como componentes funcionales React con gestión de estado mediante
+        <code>useState</code>, efectos secundarios con <code>useEffect</code> y referencias de DOM con <code>useRef</code>
+        (para scroll automático al último mensaje).
+      </p>
+
+      <h4>5. Simulación multi-agente</h4>
+      <p>
+        La <code>SimulationScreen</code> implementa un bucle asíncrono con dos agentes LLM distintos. Las métricas
+        emocionales se inyectan dinámicamente en el prompt del agente víctima en cada ciclo. El análisis de perfil
+        del estudiante se ejecuta en paralelo (sin bloquear el hilo principal de la UI) mediante <code>Promise.all()</code>.
+        Las respuestas del asistente se dividen en múltiples mensajes usando el separador <code>|</code>, simulando
+        un delay de escritura proporcional a la longitud de la respuesta.
+      </p>
+
+      <div class="info-box blue">
+        <div class="info-box-icon">💡</div>
+        <div class="info-box-body">
+          <p><strong>Decisión de diseño clave:</strong> Se optó por <strong>no persistir las conversaciones</strong> en disco ni en servidores para el MVP. Esto elimina cualquier riesgo de exposición de datos sensibles de menores de edad y simplifica la arquitectura, alineándose con el principio de <em>privacy by design</em> del RGPD.</p>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ───────────────────────────────────────────────────────── -->
+    <!-- GRADO DE CONSECUCIÓN -->
+    <!-- ───────────────────────────────────────────────────────── -->
+    <section class="section" id="grado">
+      <div class="section-header">
+        <div class="section-number">IV</div>
+        <h2>Grado de Consecución de Objetivos</h2>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Objetivo</th><th>Alcance</th><th>Estado</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>App de escritorio multiplataforma funcional (Win / macOS / Linux)</td><td>MVP</td><td><span class="badge done">✅ Completado</span></td></tr>
+            <tr><td>Chat empático con IA (Google Gemini 2.0 Flash)</td><td>MVP</td><td><span class="badge done">✅ Completado</span></td></tr>
+            <tr><td>Pantalla de recursos de emergencia accesible sin conexión</td><td>MVP</td><td><span class="badge done">✅ Completado</span></td></tr>
+            <tr><td>Simulación educativa con dos agentes IA</td><td>MVP</td><td><span class="badge done">✅ Completado</span></td></tr>
+            <tr><td>Métricas emocionales en tiempo real</td><td>MVP</td><td><span class="badge done">✅ Completado</span></td></tr>
+            <tr><td>Extracción automática de perfil del estudiante</td><td>MVP</td><td><span class="badge done">✅ Completado</span></td></tr>
+            <tr><td>Exportación de sesión como JSON</td><td>MVP</td><td><span class="badge done">✅ Completado</span></td></tr>
+            <tr><td>Backend con base de datos (Supabase PostgreSQL)</td><td>Futuro</td><td><span class="badge todo">⏳ Pendiente</span></td></tr>
+            <tr><td>Autenticación de usuarios (anónimo / identificado)</td><td>Futuro</td><td><span class="badge todo">⏳ Pendiente</span></td></tr>
+            <tr><td>Generación de informes PDF para centros educativos</td><td>Futuro</td><td><span class="badge todo">⏳ Pendiente</span></td></tr>
+            <tr><td>Notificación automática al orientador del centro</td><td>Futuro</td><td><span class="badge todo">⏳ Pendiente</span></td></tr>
+            <tr><td>Soporte multilingüe (catalán, euskera, gallego, inglés)</td><td>Futuro</td><td><span class="badge todo">⏳ Pendiente</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="info-box green">
+        <div class="info-box-icon">✅</div>
+        <div class="info-box-body">
+          <p>El <strong>MVP planificado se ha completado al 100%</strong>. Las funcionalidades pendientes forman parte de la hoja de ruta para versiones futuras y no eran parte del alcance definido para este proyecto.</p>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ───────────────────────────────────────────────────────── -->
+    <!-- INNOVACIÓN -->
+    <!-- ───────────────────────────────────────────────────────── -->
+    <section class="section" id="innovacion">
+      <div class="section-header">
+        <div class="section-number">IV</div>
+        <h2>Innovación</h2>
+      </div>
+
+      <p><strong>Tu Amigo</strong> aporta innovación en varios niveles técnicos y conceptuales respecto a las soluciones existentes en el mercado educativo:</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>#</th><th>Aspecto innovador</th><th>Descripción</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>LLM para apoyo emocional contextualizado</td>
+              <td>A diferencia de chatbots basados en reglas o árboles de decisión, la app usa Gemini 2.0 Flash con un prompt de sistema diseñado específicamente para contención emocional en situaciones de acoso. La IA adapta su tono y contenido a cada conversación de forma dinámica.</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>Simulación multi-agente educativa en tiempo real</td>
+              <td>La <code>SimulationScreen</code> implementa dos agentes LLM con personalidades y objetivos distintos que interactúan de forma autónoma. Esto es poco común en aplicaciones educativas para este rango de edad y tiene un alto potencial como herramienta de formación para docentes y orientadores.</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>Métricas emocionales dinámicas generadas por IA</td>
+              <td>El sistema extrae métricas psicológicas (tristeza, ansiedad, alivio, esperanza) directamente de las respuestas del agente IA mediante análisis estructurado (JSON), sin necesidad de modelos de clasificación emocional separados. Se actualiza en cada ciclo de simulación.</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>Privacidad por diseño (Privacy by Design)</td>
+              <td>Toda la conversación se mantiene en memoria local del proceso Electron. La API Key nunca se expone al renderer. Cero datos personales enviados a servidores propios. Alineación completa con los principios de minimización de datos del RGPD europeo.</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>Arquitectura Electron multiplataforma</td>
+              <td>Un único codebase TypeScript/React genera instaladores nativos para Windows (.exe), macOS (.dmg) y Linux (.AppImage), facilitando la distribución en centros educativos con cualquier sistema operativo, sin dependencia de navegador ni conexión permanente.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+
+    <!-- ───────────────────────────────────────────────────────── -->
+    <!-- RESULTADOS Y CONCLUSIONES -->
+    <!-- ───────────────────────────────────────────────────────── -->
+    <section class="section" id="resultados">
+      <div class="section-header">
+        <div class="section-number">V</div>
+        <h2>Resultados y Conclusiones</h2>
+      </div>
+
+      <h3>Resultados Obtenidos</h3>
+      <div class="pills" style="margin-bottom: 16px;">
+        <span class="pill">🖥️ App multiplataforma funcional</span>
+        <span class="pill">💬 Chat empático con IA operativo</span>
+        <span class="pill green">📊 Métricas emocionales en tiempo real</span>
+        <span class="pill green">🎭 Simulación multi-agente completa</span>
+      </div>
+
+      <p>
+        El proyecto <strong>Tu Amigo</strong> demuestra que es técnicamente viable construir una herramienta de apoyo emocional
+        para estudiantes víctimas de acoso escolar usando tecnologías modernas de inteligencia artificial y desarrollo de escritorio,
+        sin comprometer la privacidad de los usuarios.
+      </p>
+
+      <h3>Conclusiones</h3>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-item-title">Los LLMs ofrecen capacidad empática suficiente para una primera capa de apoyo</div>
+          <div class="timeline-item-body">Gemini 2.0 Flash genera respuestas contextualmente apropiadas y emocionalmente inteligentes, aunque no sustituyen a un profesional de la psicología. La app lo comunica explícitamente.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-item-title">Electron simplifica la distribución en entornos educativos</div>
+          <div class="timeline-item-body">Un instalador nativo por plataforma elimina las barreras de adopción en centros con infraestructura heterogénea, sin depender de servidores propios para el MVP.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-item-title">La privacidad debe ser un pilar desde el diseño inicial</div>
+          <div class="timeline-item-body">Cuando los usuarios son menores de edad en situaciones de vulnerabilidad, la arquitectura técnica debe garantizar la confidencialidad por diseño, no como capa añadida a posteriori.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-item-title">La simulación multi-agente tiene alto potencial formativo</div>
+          <div class="timeline-item-body">Los docentes y orientadores pueden usar la pantalla de simulación para comprender cómo responde el sistema antes de recomendarlo a estudiantes, aumentando la confianza en la herramienta.</div>
+        </div>
+      </div>
+
+      <h3>Trabajo Futuro</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Funcionalidad</th><th>Tecnología prevista</th><th>Impacto</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Backend con persistencia segura</td><td>Supabase (PostgreSQL + Auth)</td><td>Histórico de conversaciones, seguimiento del caso</td></tr>
+            <tr><td>Flujos de consentimiento explícito</td><td>Supabase Auth</td><td>Cumplimiento RGPD, modos anónimo / identificado</td></tr>
+            <tr><td>Generación de informes PDF</td><td>n8n + SendGrid</td><td>Notificación estructurada a orientadores del centro</td></tr>
+            <tr><td>Soporte multilingüe</td><td>i18n (catalán, euskera, gallego, inglés)</td><td>Cobertura nacional completa</td></tr>
+            <tr><td>Integración con ANAR / 112</td><td>APIs externas</td><td>Derivación automática en casos de riesgo alto</td></tr>
+            <tr><td>Gamificación de resiliencia</td><td>Módulos React adicionales</td><td>Engagement a largo plazo para el estudiante</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+
+    <!-- ───────────────────────────────────────────────────────── -->
+    <!-- BIBLIOGRAFÍA -->
+    <!-- ───────────────────────────────────────────────────────── -->
+    <section class="section" id="bibliografia">
+      <div class="section-header">
+        <div class="section-number">V</div>
+        <h2>Bibliografía y Webgrafía</h2>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Recurso</th><th>Tipo</th><th>URL / Referencia</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Google Generative AI SDK</td><td>Documentación técnica</td><td><code>ai.google.dev</code></td></tr>
+            <tr><td>Electron Documentation</td><td>Documentación técnica</td><td><code>electronjs.org/docs/latest</code></td></tr>
+            <tr><td>React Documentation</td><td>Documentación técnica</td><td><code>react.dev</code></td></tr>
+            <tr><td>Vite Documentation</td><td>Documentación técnica</td><td><code>vitejs.dev</code></td></tr>
+            <tr><td>TailwindCSS Documentation</td><td>Documentación técnica</td><td><code>tailwindcss.com/docs</code></td></tr>
+            <tr><td>TypeScript Handbook</td><td>Documentación técnica</td><td><code>typescriptlang.org/docs</code></td></tr>
+            <tr><td>Mermaid.js Documentation</td><td>Documentación técnica</td><td><code>mermaid.js.org</code></td></tr>
+            <tr><td>ANAR Fundación — Acoso Escolar</td><td>Referencia institucional</td><td><code>anar.org</code></td></tr>
+            <tr><td>Ministerio de Educación — Protocolo frente al acoso escolar</td><td>Referencia institucional</td><td><code>educacionyfp.gob.es</code></td></tr>
+            <tr><td>Reglamento General de Protección de Datos (RGPD)</td><td>Marco legal</td><td>Reglamento (UE) 2016/679</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div><!-- /page-content -->
+</main>
+
+<!-- FOOTER -->
+<footer class="doc-footer">
+  <strong>Tu Amigo</strong> · Documentación del Proyecto · Desarrollo de Aplicaciones Multiplataforma · Curso 2025–2026
+</footer>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      /* ── Nodos primarios ── */
+      primaryColor:            '#2196F3',
+      primaryTextColor:        '#FFFFFF',
+      primaryBorderColor:      '#1565C0',
+
+      /* ── Nodos secundarios ── */
+      secondaryColor:          '#E3F2FD',
+      secondaryTextColor:      '#1565C0',
+      secondaryBorderColor:    '#90CAF9',
+
+      /* ── Nodos terciarios / clusters ── */
+      tertiaryColor:           '#E8F5E9',
+      tertiaryTextColor:       '#2E7D32',
+      tertiaryBorderColor:     '#A5D6A7',
+
+      /* ── Texto general y líneas ── */
+      textColor:               '#37474F',
+      lineColor:               '#607D8B',
+      background:              '#FFFFFF',
+
+      /* ── Flowchart ── */
+      mainBkg:                 '#2196F3',
+      nodeBorder:              '#1565C0',
+      clusterBkg:              '#E3F2FD',
+      clusterBorder:           '#90CAF9',
+      titleColor:              '#1565C0',
+      edgeLabelBackground:     '#F8FAFB',
+
+      /* ── Sequence diagrams ── */
+      actorBkg:                '#2196F3',
+      actorBorder:             '#1565C0',
+      actorTextColor:          '#FFFFFF',
+      actorLineColor:          '#90A4AE',
+      signalColor:             '#37474F',
+      signalTextColor:         '#37474F',
+      labelBoxBkgColor:        '#E3F2FD',
+      labelBoxBorderColor:     '#90CAF9',
+      labelTextColor:          '#1565C0',
+      loopTextColor:           '#1565C0',
+      noteBkgColor:            '#FFF8E1',
+      noteTextColor:           '#5D4037',
+      noteBorderColor:         '#FFE082',
+      activationBorderColor:   '#2196F3',
+      activationBkgColor:      '#BBDEFB',
+      sequenceNumberColor:     '#FFFFFF',
+
+      /* ── Gantt ── */
+      sectionBkgColor:         '#E3F2FD',
+      altSectionBkgColor:      '#F8FAFB',
+      sectionBkgColor2:        '#BBDEFB',
+      taskBorderColor:         '#1565C0',
+      taskBkgColor:            '#2196F3',
+      taskTextColor:           '#FFFFFF',
+      taskTextOutsideColor:    '#37474F',
+      taskTextLightColor:      '#FFFFFF',
+      gridColor:               '#E0E7EF',
+      doneTaskBkgColor:        '#43A047',
+      doneTaskBorderColor:     '#2E7D32',
+      critBorderColor:         '#E53935',
+      critBkgColor:            '#FFEBEE',
+      activeTaskBorderColor:   '#FB8C00',
+      activeTaskBkgColor:      '#FFF3E0',
+      todayLineColor:          '#E53935',
+
+      /* ── Tipografía ── */
+      fontFamily:              'Inter, system-ui, sans-serif',
+      fontSize:                '13px',
+    },
+    flowchart: { curve: 'basis', padding: 20 },
+    sequence:  { actorMargin: 60, messageMargin: 30, useMaxWidth: true },
+    gantt:     { useMaxWidth: true },
+  });
+</script>
+</body>
+</html>
