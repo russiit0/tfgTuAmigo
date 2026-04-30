@@ -259,7 +259,7 @@ export const SimulationScreen: React.FC<SimulationScreenProps> = ({ onBack }) =>
 
         } catch (error: any) {
             console.error("Simulation error:", error);
-            setError(`Error: ${error.message || "Unknown error"}`);
+            setError("La simulación se ha detenido debido a un error de conexión.");
             setIsSimulating(false);
             setIsTyping(false);
             simulationRef.current = false;

@@ -66,6 +66,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNavigate, onLogi
                     <p className="text-gray-500 text-sm">Consejos, guías y herramientas para sentirte mejor.</p>
                 </button>
 
+                {user?.rol === 'admin' && (
                 <button
                     onClick={() => onNavigate('simulation')}
                     className="flex-1 flex flex-col items-center p-8 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 border-2 border-transparent hover:border-purple-500 group"
@@ -74,8 +75,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNavigate, onLogi
                         <Brain className="w-8 h-8 text-purple-600 group-hover:text-white" />
                     </div>
                     <h3 className="text-xl font-semibold text-calm-text-primary mb-2">Simulación IA</h3>
-                    <p className="text-gray-500 text-sm">Ver cómo la IA ayuda a otros estudiantes.</p>
+                    <p className="text-gray-500 text-sm">Panel de control y testing (Admin).</p>
                 </button>
+                )}
             </div>
         </div>
     );

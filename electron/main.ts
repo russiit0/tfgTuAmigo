@@ -95,7 +95,7 @@ app.whenReady().then(async () => {
   ipcMain.handle('chat', async (event, messages) => {
     try {
       const apiKey = process.env.GEMINI_API_KEY;
-      const modelName = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+      const modelName = process.env.GEMINI_MODEL || "gemini-flash-latest";
       
       if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
         return "Error: Gemini API Key is missing. Please add it to the .env file.";
@@ -103,12 +103,6 @@ app.whenReady().then(async () => {
 
       const systemMessage = messages.find((m: any) => m.role === 'system');
       const systemInstruction = systemMessage ? systemMessage.content : undefined;
-
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
-        systemInstruction: systemInstruction
-      });
 
       // Filter out system message and the last message (which is the current prompt)
       // We need to separate the history from the current prompt
@@ -164,7 +158,7 @@ app.whenReady().then(async () => {
 
     } catch (error: any) {
       console.error("Gemini Error:", error);
-      return `Error from Gemini: ${error.message}`;
+      return "ERROR_API";
     }
   });
 
@@ -182,6 +176,7 @@ app.whenReady().then(async () => {
         correo,
         password_hash,
         salt,
+        rol: "normal-user",
         perfil: { situacion: "", nivel_riesgo: "bajo", accion_sugerida: "" },
         metricas: { tristeza: 0, ansiedad: 0, alivio: 0, esperanza: 0 }
       });
@@ -196,7 +191,7 @@ app.whenReady().then(async () => {
 
       return {
         success: true,
-        user: { id: newUser._id.toString(), nombre: newUser.nombre, correo: newUser.correo }
+        user: { id: newUser._id.toString(), nombre: newUser.nombre, correo: newUser.correo, rol: newUser.rol }
       };
     } catch (error: any) {
       return { success: false, error: error.message };
@@ -213,7 +208,7 @@ app.whenReady().then(async () => {
 
       return {
         success: true,
-        user: { id: user._id.toString(), nombre: user.nombre, correo: user.correo }
+        user: { id: user._id.toString(), nombre: user.nombre, correo: user.correo, rol: user.rol }
       };
     } catch (error: any) {
       return { success: false, error: error.message };
@@ -307,6 +302,73 @@ app.whenReady().then(async () => {
       return { success: true };
     } catch (error: any) {
       return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('session:deleteConversation', async (event, { userId, conversationId }) => {
+    try {
+      const session = await Sesion.findOne({ id_usuario: userId });
+      if (!session) throw new Error("No session found");
+
+      // Pull the conversation out of the array
+      session.conversaciones.pull(conversationId);
+      await session.save();
+
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('session:analyzeMetrics', async (event, { userId, messages }) => {
+    try {
+      if (!messages || messages.length === 0) return { success: true };
+      const apiKey = process.env.GEMINI_API_KEY;
+      const modelName = process.env.GEMINI_MODEL || "gemini-flash-latest";
+      if (!apiKey) throw new Error("No API root");
+
+      const systemPrompt = `Analiza el historial provisto de una sesión de chat sobre acoso escolar. Devuelve SOLO un JSON con este formato exacto:
+      {
+        "name": "Nombre (o Desconocido)",
+        "age": "Edad (o Desconocido)",
+        "situation": "Resumen de 1 frase del problema",
+        "riskLevel": "Bajo" | "Medio" | "Alto",
+        "suggestedAction": "1 acción recomendada rápida",
+        "emotions": {
+          "tristeza": número (0-100),
+          "ansiedad": número (0-100),
+          "alivio": número (0-100),
+          "esperanza": número (0-100)
+        }
+      }`;
+
+      // Enviar historial como user messages
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: modelName, systemInstruction: systemPrompt });
+
+      const chatInput = messages.map((m: any) => `${m.role}: ${m.content}`).join('\n');
+      const result = await model.generateContent(chatInput);
+      const responseText = await result.response.text();
+      
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const data = JSON.parse(jsonMatch[0]);
+        const user = await Usuario.findById(userId);
+        if (user) {
+          user.perfil = {
+            situacion: data.situation || user.perfil.situacion,
+            nivel_riesgo: data.riskLevel?.toLowerCase() || user.perfil.nivel_riesgo,
+            accion_sugerida: data.suggestedAction || user.perfil.accion_sugerida
+          };
+          if (data.emotions) {
+            user.metricas = data.emotions;
+          }
+          await user.save();
+        }
+      }
+      return { success: true };
+    } catch (error) {
+      return { success: false };
     }
   });
 

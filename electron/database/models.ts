@@ -18,6 +18,7 @@ const UsuarioSchema = new mongoose.Schema({
   correo: { type: String, required: true, unique: true },
   password_hash: { type: String, required: true },
   salt: { type: String, required: true },
+  rol: { type: String, enum: ['normal-user', 'admin'], default: 'normal-user' },
   perfil: PerfilSchema,
   metricas: MetricasSchema,
 });

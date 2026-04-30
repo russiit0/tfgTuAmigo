@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, ArrowLeft, Shield, Menu, X, MessageSquare, Plus, Clock } from 'lucide-react';
+import { Send, ArrowLeft, Shield, Menu, X, MessageSquare, Plus, Clock, Trash2, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface ChatScreenProps {
@@ -23,8 +23,11 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
     const [inputText, setInputText] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+    const [toastMsg, setToastMsg] = useState<string | null>(null);
     const [hasMore, setHasMore] = useState(false);
     const [skip, setSkip] = useState(0);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [convToDelete, setConvToDelete] = useState<string | null>(null);
     const limit = 20;
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -140,6 +143,33 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
         setIsHistoryLoading(false);
     };
 
+    const handleDeleteConversation = (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        setConvToDelete(id);
+        setShowDeleteModal(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!user || !convToDelete) return;
+        
+        const id = convToDelete;
+        const res = await window.electronAPI.session.deleteConversation({ userId: user.id, conversationId: id });
+        if (res.success) {
+            setConversations(prev => prev.filter(c => c.id !== id));
+            if (conversationId === id) {
+                setConversationId(null);
+                setMessages([]);
+            }
+            setShowDeleteModal(false);
+            setConvToDelete(null);
+        } else {
+            setToastMsg("No se pudo eliminar la conversación.");
+            setShowDeleteModal(false);
+            setConvToDelete(null);
+            setTimeout(() => setToastMsg(null), 3000);
+        }
+    };
+
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
         if (e.currentTarget.scrollTop === 0 && hasMore) {
             loadMoreMessages();
@@ -197,6 +227,10 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
 
             const responseText = await window.electronAPI.chat(messagesHistory);
 
+            if (responseText === "ERROR_API") {
+                throw new Error("No puedo responder en este momento. Inténtalo de nuevo más tarde.");
+            }
+
             const aiResponse: Message = {
                 id: (Date.now() + 1).toString(),
                 text: responseText,
@@ -212,10 +246,14 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
                     message: { texto: responseText, emisor: 'modelo', fecha_envio: aiResponse.timestamp }
                 });
                 fetchConversations(); // Update snippet if it's the first message
+                
+                // Trigger background metrics analysis asynchronously
+                const fullHistory = [...messagesHistory, { role: 'model', content: responseText }];
+                window.electronAPI.session.analyzeMetrics({ userId: user.id, messages: fullHistory }).catch(console.error);
             }
-        } catch (error) {
-            const errorMsg: Message = { id: 'err-' + Date.now(), text: "Lo siento, tuve un problema al procesar tu mensaje.", isUser: false, timestamp: new Date() };
-            setMessages(prev => [...prev, errorMsg]);
+        } catch (error: any) {
+            setToastMsg(error.message || "Lo siento, tuve un problema al procesar tu mensaje.");
+            setTimeout(() => setToastMsg(null), 5000);
         } finally {
             setIsLoading(false);
             setTimeout(scrollToBottom, 50);
@@ -224,8 +262,38 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
 
     return (
         <div className="flex h-screen bg-gray-50 overflow-hidden relative">
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div 
+                        className="fixed inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" 
+                        onClick={() => setShowDeleteModal(false)}
+                    />
+                    <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl relative z-10 animate-in zoom-in-95 duration-200">
+                        <div className="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <AlertTriangle className="w-8 h-8 text-red-600" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-gray-800 text-center mb-2">¿Eliminar chat?</h3>
+                        <p className="text-gray-500 text-center mb-8">Esta acción no se puede deshacer y perderás todo el historial de esta charla.</p>
+                        <div className="flex flex-col gap-3">
+                            <button 
+                                onClick={confirmDelete}
+                                className="w-full py-4 bg-red-600 text-white rounded-2xl font-bold hover:bg-red-700 transition-all active:scale-95 shadow-lg shadow-red-200"
+                            >
+                                Sí, eliminar permanentemente
+                            </button>
+                            <button 
+                                onClick={() => setShowDeleteModal(false)}
+                                className="w-full py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition-all active:scale-95"
+                            >
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             {/* Sidebar Overlay (Mobile) */}
-            {isSidebarOpen && (
+            {isSidebarOpen && user && (
                 <div 
                     className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden" 
                     onClick={() => setIsSidebarOpen(false)}
@@ -233,6 +301,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
             )}
 
             {/* Sidebar */}
+            {user && (
             <aside className={`fixed inset-y-0 left-0 w-80 bg-white border-r border-gray-100 z-50 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 <div className="flex flex-col h-full">
                     <div className="p-6 border-b border-gray-50 flex items-center justify-between">
@@ -261,23 +330,32 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
                             </div>
                         ) : (
                             conversations.map((conv) => (
-                                <button
-                                    key={conv.id}
-                                    onClick={() => loadConversation(conv.id)}
-                                    className={`w-full text-left p-4 rounded-xl transition-all border ${conversationId === conv.id ? 'bg-blue-50 border-blue-200' : 'bg-white border-transparent hover:bg-gray-50'}`}
-                                >
-                                    <p className="font-semibold text-sm text-gray-800 truncate mb-1">
-                                        {conv.title}
-                                    </p>
-                                    <p className="text-xs text-gray-400">
-                                        {new Date(conv.date).toLocaleDateString()} · {new Date(conv.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                    </p>
-                                </button>
+                                <div key={conv.id} className="relative group">
+                                    <button
+                                        onClick={() => loadConversation(conv.id)}
+                                        className={`w-full text-left p-4 pr-10 rounded-xl transition-all border ${conversationId === conv.id ? 'bg-blue-50 border-blue-200' : 'bg-white border-transparent hover:bg-gray-50'}`}
+                                    >
+                                        <p className="font-semibold text-sm text-gray-800 truncate mb-1">
+                                            {conv.title}
+                                        </p>
+                                        <p className="text-xs text-gray-400">
+                                            {new Date(conv.date).toLocaleDateString()} · {new Date(conv.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                        </p>
+                                    </button>
+                                    <button 
+                                        onClick={(e) => handleDeleteConversation(e, conv.id)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all focus:opacity-100"
+                                        title="Eliminar conversación"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
                             ))
                         )}
                     </div>
                 </div>
             </aside>
+            )}
 
             {/* Main Chat Area */}
             <main className="flex-1 flex flex-col h-full relative">
@@ -287,12 +365,14 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
                         <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full transition-colors mr-2">
                             <ArrowLeft className="w-6 h-6 text-gray-600" />
                         </button>
+                        {user && (
                         <button 
                             onClick={() => setIsSidebarOpen(true)}
                             className="p-2 hover:bg-gray-100 rounded-lg lg:hidden"
                         >
                             <Menu className="w-6 h-6 text-gray-600" />
                         </button>
+                        )}
                         <div>
                             <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
@@ -305,6 +385,17 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
                          <Shield className="w-6 h-6 text-calm-blue-primary opacity-80" />
                     </div>
                 </header>
+
+                {/* Toast Notification */}
+                {toastMsg && (
+                    <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-50 bg-red-500 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
+                        <Shield className="w-5 h-5 flex-shrink-0" />
+                        <span className="text-sm font-medium">{toastMsg}</span>
+                        <button onClick={() => setToastMsg(null)} className="ml-2 bg-white/20 hover:bg-white/30 rounded-full p-1 transition-colors">
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
 
                 {/* Messages Container */}
                 <div 
