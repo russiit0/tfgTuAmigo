@@ -1,13 +1,36 @@
 import React from 'react';
-import { MessageCircle, BookOpen, Heart, Brain } from 'lucide-react';
+import { MessageCircle, BookOpen, Heart, Brain, User, LogOut } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface WelcomeScreenProps {
     onNavigate: (screen: 'chat' | 'resources' | 'simulation') => void;
+    onLoginClick: () => void;
 }
 
-export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNavigate }) => {
+export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNavigate, onLoginClick }) => {
+    const { user, logout } = useAuth();
     return (
-        <div className="flex flex-col items-center justify-center h-screen bg-calm-blue-light p-8 text-center">
+        <div className="flex flex-col items-center justify-center h-screen bg-calm-blue-light p-8 text-center relative">
+            <div className="absolute top-4 right-8 flex items-center gap-4">
+                {user ? (
+                    <>
+                        <div className="flex items-center gap-2 text-calm-text-primary">
+                            <User className="w-5 h-5 text-calm-blue-primary" />
+                            <span className="font-semibold">{user.nombre}</span>
+                        </div>
+                        <button onClick={logout} className="flex items-center gap-1 text-red-500 hover:bg-red-50 p-2 rounded transition-colors">
+                            <LogOut className="w-4 h-4" />
+                            <span className="text-sm">Salir</span>
+                        </button>
+                    </>
+                ) : (
+                    <button onClick={onLoginClick} className="flex items-center gap-2 bg-white text-calm-blue-primary px-4 py-2 rounded-full shadow hover:shadow-md transition-all font-semibold">
+                        <User className="w-4 h-4" />
+                        Iniciar Sesión
+                    </button>
+                )}
+            </div>
+
             <div className="mb-8 animate-bounce">
                 <Heart className="w-24 h-24 text-calm-blue-primary" fill="#2196F3" />
             </div>
@@ -43,6 +66,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNavigate }) => {
                     <p className="text-gray-500 text-sm">Consejos, guías y herramientas para sentirte mejor.</p>
                 </button>
 
+                {user?.rol === 'admin' && (
                 <button
                     onClick={() => onNavigate('simulation')}
                     className="flex-1 flex flex-col items-center p-8 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 border-2 border-transparent hover:border-purple-500 group"
@@ -51,8 +75,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNavigate }) => {
                         <Brain className="w-8 h-8 text-purple-600 group-hover:text-white" />
                     </div>
                     <h3 className="text-xl font-semibold text-calm-text-primary mb-2">Simulación IA</h3>
-                    <p className="text-gray-500 text-sm">Ver cómo la IA ayuda a otros estudiantes.</p>
+                    <p className="text-gray-500 text-sm">Panel de control y testing (Admin).</p>
                 </button>
+                )}
             </div>
         </div>
     );
