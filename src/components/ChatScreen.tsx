@@ -6,13 +6,6 @@ interface ChatScreenProps {
     onBack: () => void;
 }
 
-interface Message {
-    id: string;
-    text: string;
-    isUser: boolean;
-    timestamp: Date;
-}
-
 export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
     const { user } = useAuth();
     const [conversationId, setConversationId] = useState<string | null>(null);
@@ -225,7 +218,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
                 { role: 'user', content: inputText }
             ];
 
-            const responseText = await window.electronAPI.chat(messagesHistory);
+            const responseText = await aiService.sendMessage(messagesHistory);
 
             if (responseText === "ERROR_API") {
                 throw new Error("No puedo responder en este momento. Inténtalo de nuevo más tarde.");

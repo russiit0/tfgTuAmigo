@@ -1,4 +1,4 @@
-// See the Electron documentation for details on how to use preload scripts:
+// Consulta la documentación de Electron para ver detalles sobre cómo usar los scripts de preload:
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 import { contextBridge, ipcRenderer } from 'electron';
 

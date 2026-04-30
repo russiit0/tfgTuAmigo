@@ -1,21 +1,20 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
-import { net } from 'electron';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import { connectDB } from './database/db';
 import { Usuario, Sesion } from './database/models';
+import { GeminiService } from './services/gemini.service';
 
 dotenv.config();
 
-// Handle creating/removing shortcuts on Windows when installing/uninstalling.
+// Manejar la creación/eliminación de accesos directos en Windows al instalar/desinstalar.
 if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
 function createWindow() {
-  // Create the browser window.
+  // Crear la ventana del navegador.
   const mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -25,11 +24,11 @@ function createWindow() {
       contextIsolation: true,
     },
     title: "Tu Amigo",
-    backgroundColor: '#E3F2FD', // calm_blue_light
+    backgroundColor: '#E3F2FD', // azul claro relajante
   });
 
-  // In production, load the index.html of the app.
-  // In development, load the local dev server.
+  // En producción, cargar el index.html de la aplicación.
+  // En desarrollo, cargar el servidor de desarrollo local.
   const isDev = process.env.NODE_ENV === 'development';
 
   if (isDev) {
@@ -373,17 +372,17 @@ app.whenReady().then(async () => {
   });
 
   app.on('activate', () => {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
+    // En macOS es común volver a crear una ventana en la aplicación cuando
+    // se hace clic en el icono del dock y no hay otras ventanas abiertas.
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
     }
   });
 });
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
+// Salir cuando todas las ventanas estén cerradas, excepto en macOS. 
+// Allí, es común que las aplicaciones y su barra de menú permanezcan 
+// activas hasta que el usuario salga explícitamente con Cmd + Q.
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
