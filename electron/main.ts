@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { connectDB } from './database/db';
 import { Usuario, Sesion } from './database/models';
 import { GeminiService } from './services/gemini.service';
@@ -175,7 +176,7 @@ app.whenReady().then(async () => {
         correo,
         password_hash,
         salt,
-        rol: "normal-user",
+        rol: "usuario",
         perfil: { situacion: "", nivel_riesgo: "bajo", accion_sugerida: "" },
         metricas: { tristeza: 0, ansiedad: 0, alivio: 0, esperanza: 0 }
       });
@@ -326,12 +327,15 @@ app.whenReady().then(async () => {
       const modelName = process.env.GEMINI_MODEL || "gemini-flash-latest";
       if (!apiKey) throw new Error("No API root");
 
-      const systemPrompt = `Analiza el historial provisto de una sesión de chat sobre acoso escolar. Devuelve SOLO un JSON con este formato exacto:
+      const systemPrompt = `Analiza el historial provisto de una sesión de chat sobre acoso escolar. Devuelve SOLO un JSON con este formato exacto, sin explicaciones ni texto adicional:
       {
-        "name": "Nombre (o Desconocido)",
-        "age": "Edad (o Desconocido)",
+        "name": "Nombre del usuario si lo mencionó (o Desconocido)",
+        "age": "Edad si la mencionó (o Desconocido)",
+        "province": "Provincia o ciudad si la mencionó (o null)",
+        "educationalCenter": "Nombre del colegio o instituto si lo mencionó (o null)",
+        "situationType": "acoso escolar | ciberacoso | acoso laboral | otro",
         "situation": "Resumen de 1 frase del problema",
-        "riskLevel": "Bajo" | "Medio" | "Alto",
+        "riskLevel": "Bajo | Medio | Alto",
         "suggestedAction": "1 acción recomendada rápida",
         "emotions": {
           "tristeza": número (0-100),
@@ -355,9 +359,12 @@ app.whenReady().then(async () => {
         const user = await Usuario.findById(userId);
         if (user) {
           user.perfil = {
-            situacion: data.situation || user.perfil.situacion,
-            nivel_riesgo: data.riskLevel?.toLowerCase() || user.perfil.nivel_riesgo,
-            accion_sugerida: data.suggestedAction || user.perfil.accion_sugerida
+            situacion: data.situation || user.perfil?.situacion,
+            nivel_riesgo: data.riskLevel?.toLowerCase() || user.perfil?.nivel_riesgo,
+            accion_sugerida: data.suggestedAction || user.perfil?.accion_sugerida,
+            provincia: data.province || user.perfil?.provincia,
+            centro_educativo: data.educationalCenter || user.perfil?.centro_educativo,
+            tipo_situacion: data.situationType || user.perfil?.tipo_situacion,
           };
           if (data.emotions) {
             user.metricas = data.emotions;
@@ -368,6 +375,122 @@ app.whenReady().then(async () => {
       return { success: true };
     } catch (error) {
       return { success: false };
+    }
+  });
+
+  ipcMain.handle('session:requestHelp', async (event, { userId, conversationId, pendingInfo }) => {
+    try {
+      const apiKey = process.env.GEMINI_API_KEY;
+      const modelName = process.env.GEMINI_MODEL || "gemini-flash-latest";
+      const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL;
+      if (!apiKey) throw new Error("No API key");
+
+      const user = await Usuario.findById(userId);
+      if (!user) throw new Error("User not found");
+
+      // Apply any pending info from chat (province, center, etc.)
+      if (pendingInfo) {
+        user.perfil = { ...user.perfil?.toObject?.() || user.perfil, ...pendingInfo };
+        await user.save();
+      }
+
+      const perfil = user.perfil || {};
+
+      // Check if we need more info before calling n8n
+      if (!perfil.provincia) {
+        return { needsInfo: true, field: 'provincia', question: "Para buscar quien está más cerca de ti, ¿me puedes decir en qué provincia o ciudad estás?" };
+      }
+
+      const esTipoEscolar = perfil.tipo_situacion?.toLowerCase().includes('escolar');
+      if (esTipoEscolar && !perfil.centro_educativo) {
+        return { needsInfo: true, field: 'centro_educativo', question: "¿Me puedes decir el nombre del colegio o instituto donde está pasando esto?" };
+      }
+
+      // Get last 20 messages for summary
+      const sesion = await Sesion.findOne({ id_usuario: userId });
+      let mensajesRecientes: any[] = [];
+      if (sesion) {
+        const conv = sesion.conversaciones.id(conversationId);
+        if (conv) {
+          mensajesRecientes = conv.mensajes.slice(-20).map((m: any) => ({
+            role: m.emisor === 'usuario' ? 'user' : 'assistant',
+            content: m.texto
+          }));
+        }
+      }
+
+      // Generate case summary with Gemini
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const summaryModel = genAI.getGenerativeModel({ model: modelName });
+      const summaryPrompt = `Eres un asistente que genera resúmenes de casos de acoso para servicios de ayuda.
+Genera un resumen conciso y objetivo del siguiente caso. Devuelve SOLO un JSON con este formato:
+{
+  "resumen": "Descripción del caso en 2-3 frases",
+  "puntos_clave": ["punto 1", "punto 2", "punto 3"]
+}
+
+Datos del perfil:
+- Nombre: ${user.nombre || 'Desconocido'}
+- Situación: ${perfil.situacion || 'No especificada'}
+- Tipo: ${perfil.tipo_situacion || 'No especificado'}
+
+Historial de la conversación:
+${mensajesRecientes.map((m: any) => `${m.role}: ${m.content}`).join('\n')}`;
+
+      const summaryResult = await summaryModel.generateContent(summaryPrompt);
+      const summaryText = summaryResult.response.text();
+      const summaryMatch = summaryText.match(/\{[\s\S]*\}/);
+      let resumen = 'Sin descripción disponible';
+      let puntos_clave: string[] = [];
+      if (summaryMatch) {
+        const summaryData = JSON.parse(summaryMatch[0]);
+        resumen = summaryData.resumen || resumen;
+        puntos_clave = summaryData.puntos_clave || [];
+      }
+
+      const payload = {
+        nombre: user.nombre,
+        edad: perfil.age || 'Desconocida',
+        provincia: perfil.provincia,
+        centro_educativo: perfil.centro_educativo || null,
+        tipo_situacion: perfil.tipo_situacion || 'otro',
+        resumen,
+        nivel_riesgo: perfil.nivel_riesgo || 'Medio',
+        puntos_clave,
+      };
+
+      if (!n8nWebhookUrl) {
+        // If no n8n configured, return ANAR as fallback
+        return {
+          success: true,
+          resource: 'ANAR',
+          contact: '900 20 20 10',
+          messageForUser: 'He buscado recursos de ayuda para ti. La Fundación ANAR (900 20 20 10) es un servicio gratuito especializado en ayudar a personas en tu situación. Están disponibles las 24 horas. Estás haciendo muy bien en pedir ayuda.'
+        };
+      }
+
+      const n8nResponse = await fetch(n8nWebhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!n8nResponse.ok) throw new Error(`n8n responded with ${n8nResponse.status}`);
+
+      const result = await n8nResponse.json();
+      return {
+        success: true,
+        resource: result.resource,
+        contact: result.contact,
+        messageForUser: result.messageForUser || 'He contactado con un servicio de ayuda. Alguien se pondrá en contacto contigo pronto. Estás haciendo lo correcto.'
+      };
+    } catch (error: any) {
+      console.error('[requestHelp] Error:', error);
+      return {
+        success: false,
+        error: error.message,
+        messageForUser: 'Ha ocurrido un problema al intentar contactar. Por favor, llama directamente al ANAR: 900 20 20 10 (gratuito, disponible 24h).'
+      };
     }
   });
 

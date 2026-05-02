@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       addMessageToConversation: (data: any) => ipcRenderer.invoke('session:addMessageToConversation', data),
       getMessages: (data: any) => ipcRenderer.invoke('session:getMessages', data),
       analyzeMetrics: (data: any) => ipcRenderer.invoke('session:analyzeMetrics', data),
-      deleteConversation: (data: any) => ipcRenderer.invoke('session:deleteConversation', data)
+      deleteConversation: (data: any) => ipcRenderer.invoke('session:deleteConversation', data),
+      requestHelp: (data: any) => ipcRenderer.invoke('session:requestHelp', data)
     }
 });

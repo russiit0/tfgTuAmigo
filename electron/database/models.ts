@@ -4,6 +4,9 @@ const PerfilSchema = new mongoose.Schema({
   situacion: String,
   nivel_riesgo: String,
   accion_sugerida: String,
+  provincia: String,
+  centro_educativo: String,
+  tipo_situacion: String,
 });
 
 const MetricasSchema = new mongoose.Schema({
@@ -18,7 +21,7 @@ const UsuarioSchema = new mongoose.Schema({
   correo: { type: String, required: true, unique: true },
   password_hash: { type: String, required: true },
   salt: { type: String, required: true },
-  rol: { type: String, enum: ['normal-user', 'admin'], default: 'normal-user' },
+  rol: { type: String, enum: ['usuario', 'admin'], default: 'usuario' },
   perfil: PerfilSchema,
   metricas: MetricasSchema,
 });

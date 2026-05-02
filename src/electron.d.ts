@@ -12,6 +12,7 @@ export interface ElectronAPI {
         getMessages: (data: { userId: string, conversationId: string, limit: number, skip: number }) => Promise<{ success: boolean; mensajes?: any[]; hasMore?: boolean; error?: string }>;
         analyzeMetrics: (data: { userId: string; messages: any[] }) => Promise<{ success: boolean }>;
         deleteConversation: (data: { userId: string, conversationId: string }) => Promise<{ success: boolean; error?: string }>;
+        requestHelp: (data: { userId: string; conversationId: string; pendingInfo?: Record<string, string> }) => Promise<{ success?: boolean; needsInfo?: boolean; field?: string; question?: string; messageForUser?: string; resource?: string; contact?: string; error?: string }>;
     };
 }
 

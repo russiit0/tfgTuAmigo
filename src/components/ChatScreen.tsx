@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, ArrowLeft, Shield, Menu, X, MessageSquare, Plus, Clock, Trash2, AlertTriangle } from 'lucide-react';
+import { Send, ArrowLeft, Shield, Menu, X, MessageSquare, Plus, Clock, Trash2, AlertTriangle, LifeBuoy } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface ChatScreenProps {
@@ -7,7 +7,7 @@ interface ChatScreenProps {
 }
 
 export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
-    const { user } = useAuth();
+    const { user, login } = useAuth();
     const [conversationId, setConversationId] = useState<string | null>(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [conversations, setConversations] = useState<any[]>([]);
@@ -22,6 +22,16 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [convToDelete, setConvToDelete] = useState<string | null>(null);
     const limit = 20;
+
+    // Help flow state
+    const [isHelpRequesting, setIsHelpRequesting] = useState(false);
+    const [awaitingHelpInfo, setAwaitingHelpInfo] = useState<{ field: string } | null>(null);
+    const [showAuthModal, setShowAuthModal] = useState(false);
+    const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+    const [authForm, setAuthForm] = useState({ nombre: '', correo: '', password: '' });
+    const [authError, setAuthError] = useState('');
+    const [authLoading, setAuthLoading] = useState(false);
+    const [triggerHelpOnAuth, setTriggerHelpOnAuth] = useState(false);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -173,8 +183,113 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
+    const addAIMessage = async (text: string, convId: string) => {
+        const aiMsg: Message = { id: 'ai-' + Date.now(), text, isUser: false, timestamp: new Date() };
+        setMessages(prev => [...prev, aiMsg]);
+        if (user) {
+            await window.electronAPI.session.addMessageToConversation({
+                userId: user.id, conversationId: convId,
+                message: { texto: text, emisor: 'modelo', fecha_envio: aiMsg.timestamp }
+            });
+        }
+        setTimeout(scrollToBottom, 50);
+    };
+
+    const triggerHelpRequest = async (convId: string, pendingInfo?: Record<string, string>) => {
+        try {
+            const res = await window.electronAPI.session.requestHelp({ userId: user!.id, conversationId: convId, pendingInfo });
+            if (res.needsInfo && res.question && res.field) {
+                setAwaitingHelpInfo({ field: res.field });
+                await addAIMessage(res.question, convId);
+            } else if (res.success && res.messageForUser) {
+                setAwaitingHelpInfo(null);
+                await addAIMessage(res.messageForUser, convId);
+            } else {
+                setAwaitingHelpInfo(null);
+                const fallback = res.messageForUser || 'Lo siento, ha habido un problema. Puedes llamar directamente al ANAR: 900 20 20 10 (gratuito, 24h).';
+                await addAIMessage(fallback, convId);
+            }
+        } catch {
+            setAwaitingHelpInfo(null);
+            await addAIMessage('Ha ocurrido un error. Si necesitas ayuda urgente, llama al ANAR: 900 20 20 10.', convId);
+        } finally {
+            setIsHelpRequesting(false);
+        }
+    };
+
+    const handleRequestHelp = async () => {
+        if (!user) {
+            setTriggerHelpOnAuth(true);
+            setShowAuthModal(true);
+            return;
+        }
+        if (isHelpRequesting || awaitingHelpInfo) return;
+
+        let convId = conversationId;
+        if (!convId) {
+            const res = await window.electronAPI.session.newConversation(user.id);
+            if (!res.success || !res.conversationId) return;
+            convId = res.conversationId!;
+            setConversationId(convId);
+            fetchConversations();
+        }
+
+        setIsHelpRequesting(true);
+        await addAIMessage('Un momento, voy a ver quién te puede ayudar mejor. No te vayas 💙', convId);
+        await triggerHelpRequest(convId);
+    };
+
+    const handleAuthSubmit = async () => {
+        setAuthError('');
+        setAuthLoading(true);
+        try {
+            let res;
+            if (authMode === 'login') {
+                res = await window.electronAPI.auth.login({ correo: authForm.correo, password: authForm.password });
+            } else {
+                res = await window.electronAPI.auth.register({ nombre: authForm.nombre, correo: authForm.correo, password: authForm.password });
+            }
+            if (res.success && res.user) {
+                login(res.user);
+                setShowAuthModal(false);
+                setAuthForm({ nombre: '', correo: '', password: '' });
+            } else {
+                setAuthError(res.error || 'Ha ocurrido un error');
+            }
+        } catch {
+            setAuthError('Error de conexión');
+        } finally {
+            setAuthLoading(false);
+        }
+    };
+
+    // After login via modal, trigger help if pending
+    React.useEffect(() => {
+        if (user && triggerHelpOnAuth) {
+            setTriggerHelpOnAuth(false);
+            handleRequestHelp();
+        }
+    }, [user, triggerHelpOnAuth]);
+
     const handleSend = async () => {
         if (!inputText.trim()) return;
+
+        // Intercept: user is answering a help-info question
+        if (awaitingHelpInfo) {
+            const answer = inputText.trim();
+            setInputText('');
+            const userMsg: Message = { id: Date.now().toString(), text: answer, isUser: true, timestamp: new Date() };
+            setMessages(prev => [...prev, userMsg]);
+            const convId = conversationId;
+            if (!convId || !user) return;
+            await window.electronAPI.session.addMessageToConversation({
+                userId: user.id, conversationId: convId,
+                message: { texto: answer, emisor: 'usuario', fecha_envio: userMsg.timestamp }
+            });
+            setIsHelpRequesting(true);
+            await triggerHelpRequest(convId, { [awaitingHelpInfo.field]: answer });
+            return;
+        }
 
         let currentConvId = conversationId;
         if (!currentConvId && user) {
@@ -213,7 +328,13 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
             }));
             
             const messagesHistory = [
-                { role: 'system', content: 'Eres "Tu Amigo", un asistente de IA empático y cálido diseñado para ayudar a estudiantes que sufren acoso escolar. Tu objetivo es escuchar, validar sus sentimientos y ofrecer apoyo emocional. No juzgues. Si detectas riesgo grave, sugiere buscar ayuda de un adulto.' },
+                { role: 'system', content: `Eres "Tu Amigo", un asistente empático y cálido diseñado para ayudar a personas que sufren acoso escolar. Escucha activamente, valida sus sentimientos y ofrece apoyo emocional genuino. Nunca juzgues.
+
+IMPORTANTE: Cuando detectes señales de alarma en el lenguaje del usuario (desesperanza, frases como "no puedo más", "nadie me ayuda", escalada emocional intensa, o cualquier mención directa o indirecta de hacerse daño), introduce de forma natural y cálida la mención al botón de ayuda. Hazlo como lo haría una persona real, integrado en tu respuesta, sin brusquedad. Ejemplo: "No tienes que pasar por esto solo/a. Si en algún momento sientes que necesitas hablar con alguien más, tienes el botón de ayuda arriba — puedo ponerme en contacto con quien te pueda apoyar de verdad."
+
+Si en la conversación surge de forma natural la oportunidad de preguntar por la provincia o ciudad del usuario, o el nombre de su centro educativo (especialmente si hay acoso en clase), pregúntalo de forma conversacional y natural, nunca como un formulario.
+
+No menciones métricas, porcentajes, ni niveles de riesgo al usuario. Todo debe sentirse como una conversación humana y real.` },
                 ...historyForAI,
                 { role: 'user', content: inputText }
             ];
@@ -255,6 +376,61 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
 
     return (
         <div className="flex h-screen bg-gray-50 overflow-hidden relative">
+            {/* Auth Modal */}
+            {showAuthModal && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => { setShowAuthModal(false); setTriggerHelpOnAuth(false); setAuthError(''); }} />
+                    <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl relative z-10 animate-in zoom-in-95 duration-200">
+                        <div className="bg-orange-100 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <LifeBuoy className="w-7 h-7 text-orange-500" />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-800 text-center mb-1">Para pedir ayuda</h3>
+                        <p className="text-gray-500 text-center text-sm mb-5">Necesitas iniciar sesión para que podamos contactar con el recurso adecuado.</p>
+
+                        {/* Tabs */}
+                        <div className="flex bg-gray-100 rounded-xl p-1 mb-5">
+                            <button onClick={() => { setAuthMode('login'); setAuthError(''); }} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${authMode === 'login' ? 'bg-white shadow text-gray-800' : 'text-gray-500'}`}>Entrar</button>
+                            <button onClick={() => { setAuthMode('register'); setAuthError(''); }} className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${authMode === 'register' ? 'bg-white shadow text-gray-800' : 'text-gray-500'}`}>Registrarse</button>
+                        </div>
+
+                        <div className="flex flex-col gap-3">
+                            {authMode === 'register' && (
+                                <input
+                                    type="text"
+                                    placeholder="Tu nombre"
+                                    value={authForm.nombre}
+                                    onChange={e => setAuthForm(f => ({ ...f, nombre: e.target.value }))}
+                                    className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent focus:border-orange-300 rounded-xl outline-none text-sm transition-all"
+                                />
+                            )}
+                            <input
+                                type="email"
+                                placeholder="Correo electrónico"
+                                value={authForm.correo}
+                                onChange={e => setAuthForm(f => ({ ...f, correo: e.target.value }))}
+                                className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent focus:border-orange-300 rounded-xl outline-none text-sm transition-all"
+                            />
+                            <input
+                                type="password"
+                                placeholder="Contraseña"
+                                value={authForm.password}
+                                onChange={e => setAuthForm(f => ({ ...f, password: e.target.value }))}
+                                onKeyDown={e => e.key === 'Enter' && handleAuthSubmit()}
+                                className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent focus:border-orange-300 rounded-xl outline-none text-sm transition-all"
+                            />
+                            {authError && <p className="text-red-500 text-xs text-center">{authError}</p>}
+                            <button
+                                onClick={handleAuthSubmit}
+                                disabled={authLoading}
+                                className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white rounded-xl font-bold transition-all active:scale-95"
+                            >
+                                {authLoading ? 'Un momento...' : authMode === 'login' ? 'Entrar' : 'Crear cuenta'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Delete Confirmation Modal */}
             {showDeleteModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -375,7 +551,16 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
-                         <Shield className="w-6 h-6 text-calm-blue-primary opacity-80" />
+                        <button
+                            onClick={handleRequestHelp}
+                            disabled={isHelpRequesting}
+                            title="Pedir ayuda"
+                            className="flex items-center gap-2 px-3 py-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white rounded-xl font-semibold text-sm transition-all active:scale-95 shadow-md shadow-orange-200"
+                        >
+                            <LifeBuoy className={`w-4 h-4 ${isHelpRequesting ? 'animate-spin' : ''}`} />
+                            <span className="hidden sm:inline">Pedir ayuda</span>
+                        </button>
+                        <Shield className="w-5 h-5 text-calm-blue-primary opacity-60" />
                     </div>
                 </header>
 

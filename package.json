@@ -10,7 +10,8 @@
     "dev:electron": "wait-on tcp:5173 && tsc -p electron/tsconfig.json && node -e \"require('fs').writeFileSync('dist-electron/package.json', '{\\\"type\\\":\\\"commonjs\\\"}')\" && cross-env NODE_ENV=development electron .",
     "build": "tsc && vite build && tsc -p electron/tsconfig.json && electron-builder",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "seed": "tsc -p electron/tsconfig.json && node -e \"require('fs').writeFileSync('dist-electron/package.json', '{\\\"type\\\":\\\"commonjs\\\"}')\" && node dist-electron/database/seed.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
