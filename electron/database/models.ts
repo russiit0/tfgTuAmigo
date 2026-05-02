@@ -7,6 +7,7 @@ const PerfilSchema = new mongoose.Schema({
   provincia: String,
   centro_educativo: String,
   tipo_situacion: String,
+  edad: String,
 });
 
 const MetricasSchema = new mongoose.Schema({

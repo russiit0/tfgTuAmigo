@@ -325,7 +325,7 @@ app.whenReady().then(async () => {
       if (!messages || messages.length === 0) return { success: true };
       const apiKey = process.env.GEMINI_API_KEY;
       const modelName = process.env.GEMINI_MODEL || "gemini-flash-latest";
-      if (!apiKey) throw new Error("No API root");
+      if (!apiKey) throw new Error("No API key");
 
       const systemPrompt = `Analiza el historial provisto de una sesión de chat sobre acoso escolar. Devuelve SOLO un JSON con este formato exacto, sin explicaciones ni texto adicional:
       {
@@ -358,13 +358,16 @@ app.whenReady().then(async () => {
         const data = JSON.parse(jsonMatch[0]);
         const user = await Usuario.findById(userId);
         if (user) {
+          const safeStr = (val: any, fallback: any) =>
+            (val && val !== 'null' && val !== 'undefined') ? val : fallback;
           user.perfil = {
-            situacion: data.situation || user.perfil?.situacion,
-            nivel_riesgo: data.riskLevel?.toLowerCase() || user.perfil?.nivel_riesgo,
-            accion_sugerida: data.suggestedAction || user.perfil?.accion_sugerida,
-            provincia: data.province || user.perfil?.provincia,
-            centro_educativo: data.educationalCenter || user.perfil?.centro_educativo,
-            tipo_situacion: data.situationType || user.perfil?.tipo_situacion,
+            situacion: safeStr(data.situation, user.perfil?.situacion),
+            nivel_riesgo: safeStr(data.riskLevel, user.perfil?.nivel_riesgo),
+            accion_sugerida: safeStr(data.suggestedAction, user.perfil?.accion_sugerida),
+            provincia: safeStr(data.province, user.perfil?.provincia),
+            centro_educativo: safeStr(data.educationalCenter, user.perfil?.centro_educativo),
+            tipo_situacion: safeStr(data.situationType, user.perfil?.tipo_situacion),
+            edad: safeStr(data.age, user.perfil?.edad),
           };
           if (data.emotions) {
             user.metricas = data.emotions;
@@ -448,14 +451,16 @@ ${mensajesRecientes.map((m: any) => `${m.role}: ${m.content}`).join('\n')}`;
         puntos_clave = summaryData.puntos_clave || [];
       }
 
+      const capitalize = (s: string | undefined) =>
+        s ? s.charAt(0).toUpperCase() + s.slice(1) : undefined;
       const payload = {
         nombre: user.nombre,
-        edad: perfil.age || 'Desconocida',
+        edad: perfil.edad || 'Desconocida',
         provincia: perfil.provincia,
         centro_educativo: perfil.centro_educativo || null,
         tipo_situacion: perfil.tipo_situacion || 'otro',
         resumen,
-        nivel_riesgo: perfil.nivel_riesgo || 'Medio',
+        nivel_riesgo: capitalize(perfil.nivel_riesgo) || 'Medio',
         puntos_clave,
       };
 
@@ -469,11 +474,15 @@ ${mensajesRecientes.map((m: any) => `${m.role}: ${m.content}`).join('\n')}`;
         };
       }
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
       const n8nResponse = await fetch(n8nWebhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
 
       if (!n8nResponse.ok) throw new Error(`n8n responded with ${n8nResponse.status}`);
 

@@ -10,7 +10,6 @@
     },
     "include": [
         "main.ts",
-        "preload.ts",
-        "database/seed.ts"
+        "preload.ts"
     ]
 }

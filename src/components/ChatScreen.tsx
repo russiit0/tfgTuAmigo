@@ -57,6 +57,8 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
         setMessages([]);
         setSkip(0);
         setHasMore(false);
+        setAwaitingHelpInfo(null);
+        setIsHelpRequesting(false);
         
         const res = await window.electronAPI.session.newConversation(user.id);
         if (res.success && res.conversationId) {
@@ -88,6 +90,8 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
         setMessages([]);
         setSkip(0);
         setIsHistoryLoading(true);
+        setAwaitingHelpInfo(null);
+        setIsHelpRequesting(false);
 
         const res = await window.electronAPI.session.getMessages({
             userId: user.id,
@@ -339,7 +343,7 @@ No menciones métricas, porcentajes, ni niveles de riesgo al usuario. Todo debe 
                 { role: 'user', content: inputText }
             ];
 
-            const responseText = await aiService.sendMessage(messagesHistory);
+            const responseText = await window.electronAPI.chat(messagesHistory);
 
             if (responseText === "ERROR_API") {
                 throw new Error("No puedo responder en este momento. Inténtalo de nuevo más tarde.");
@@ -361,8 +365,9 @@ No menciones métricas, porcentajes, ni niveles de riesgo al usuario. Todo debe 
                 });
                 fetchConversations(); // Update snippet if it's the first message
                 
-                // Trigger background metrics analysis asynchronously
-                const fullHistory = [...messagesHistory, { role: 'model', content: responseText }];
+                // Trigger background metrics analysis asynchronously (exclude system prompt)
+                const fullHistory = [...messagesHistory, { role: 'model', content: responseText }]
+                    .filter(m => m.role !== 'system');
                 window.electronAPI.session.analyzeMetrics({ userId: user.id, messages: fullHistory }).catch(console.error);
             }
         } catch (error: any) {
