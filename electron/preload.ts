@@ -16,6 +16,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
       getMessages: (data: any) => ipcRenderer.invoke('session:getMessages', data),
       analyzeMetrics: (data: any) => ipcRenderer.invoke('session:analyzeMetrics', data),
       deleteConversation: (data: any) => ipcRenderer.invoke('session:deleteConversation', data),
-      requestHelp: (data: any) => ipcRenderer.invoke('session:requestHelp', data)
+      requestHelp: (data: any) => ipcRenderer.invoke('session:requestHelp', data),
+      markHelpRequested: (data: any) => ipcRenderer.invoke('session:markHelpRequested', data),
+      getPendingFollowUps: (userId: string) => ipcRenderer.invoke('session:getPendingFollowUps', userId),
+      recordFollowUp: (data: any) => ipcRenderer.invoke('session:recordFollowUp', data),
+      generateReport: (data: any) => ipcRenderer.invoke('session:generateReport', data),
+      notifyEmailContact: (data: any) => ipcRenderer.invoke('session:notifyEmailContact', data),
     }
 });

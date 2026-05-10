@@ -35,8 +35,18 @@ const MensajeSchema = new mongoose.Schema({
   fecha_envio: { type: Date, default: Date.now }
 });
 
+const SeguimientoSchema = new mongoose.Schema({
+  fecha: { type: Date, default: Date.now },
+  respuesta: { type: String, enum: ['mejor', 'igual', 'peor'] },
+  nota: String,
+});
+
 const ConversacionSchema = new mongoose.Schema({
-  mensajes: [MensajeSchema]
+  mensajes: [MensajeSchema],
+  ayuda_solicitada: { type: Boolean, default: false },
+  resuelta: { type: Boolean, default: false },
+  seguimientos: [SeguimientoSchema],
+  fecha_ultimo_seguimiento: Date,
 });
 
 const SesionSchema = new mongoose.Schema({

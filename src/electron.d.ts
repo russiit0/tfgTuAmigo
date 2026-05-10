@@ -13,6 +13,10 @@ export interface ElectronAPI {
         analyzeMetrics: (data: { userId: string; messages: any[] }) => Promise<{ success: boolean }>;
         deleteConversation: (data: { userId: string, conversationId: string }) => Promise<{ success: boolean; error?: string }>;
         requestHelp: (data: { userId: string; conversationId: string; pendingInfo?: Record<string, string> }) => Promise<{ success?: boolean; needsInfo?: boolean; field?: string; question?: string; messageForUser?: string; resource?: string; contact?: string; error?: string }>;
+        markHelpRequested: (data: { userId: string; conversationId: string }) => Promise<{ success: boolean }>;
+        getPendingFollowUps: (userId: string) => Promise<{ success: boolean; pendingFollowUps: { conversationId: string; title: string }[] }>;
+        recordFollowUp: (data: { userId: string; conversationId: string; respuesta: 'mejor' | 'igual' | 'peor' }) => Promise<{ success: boolean }>;
+        generateReport: (data: { userId: string; conversationId: string }) => Promise<{ success: boolean; reportText?: string; error?: string }>;
     };
 }
 

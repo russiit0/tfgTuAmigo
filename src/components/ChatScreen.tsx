@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, ArrowLeft, Shield, Menu, X, MessageSquare, Plus, Clock, Trash2, AlertTriangle, LifeBuoy } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import type { Message } from '../models/interfaces';
 
 interface ChatScreenProps {
     onBack: () => void;
@@ -46,7 +47,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
     const fetchConversations = async () => {
         if (!user) return;
         const res = await window.electronAPI.session.getConversations(user.id);
-        if (res.success) {
+        if (res.success && res.conversaciones) {
             setConversations(res.conversaciones);
         }
     };
@@ -100,7 +101,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
             skip: 0
         });
 
-        if (res.success) {
+        if (res.success && res.mensajes) {
             const mappedMessages: Message[] = res.mensajes.map((m: any) => ({
                 id: m._id,
                 text: m.texto,
@@ -108,7 +109,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
                 timestamp: new Date(m.fecha_envio)
             }));
             setMessages(mappedMessages);
-            setHasMore(res.hasMore);
+            setHasMore(res.hasMore ?? false);
             setSkip(limit);
             setTimeout(scrollToBottom, 100);
         }
@@ -129,7 +130,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
             skip
         });
 
-        if (res.success) {
+        if (res.success && res.mensajes) {
             const olderMessages: Message[] = res.mensajes.map((m: any) => ({
                 id: m._id,
                 text: m.texto,
@@ -137,7 +138,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
                 timestamp: new Date(m.fecha_envio)
             }));
             setMessages(prev => [...olderMessages, ...prev]);
-            setHasMore(res.hasMore);
+            setHasMore(res.hasMore ?? false);
             setSkip(prev => prev + limit);
 
             // Maintain scroll position
@@ -207,9 +208,14 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
                 await addAIMessage(res.question, convId);
             } else if (res.success && res.messageForUser) {
                 setAwaitingHelpInfo(null);
+                await addAIMessage('Un momento, voy a ver quién te puede ayudar mejor. No te vayas 💙', convId);
                 await addAIMessage(res.messageForUser, convId);
+                if (user) {
+                    window.electronAPI.session.markHelpRequested({ userId: user.id, conversationId: convId }).catch(console.error);
+                }
             } else {
                 setAwaitingHelpInfo(null);
+                await addAIMessage('Un momento, voy a ver quién te puede ayudar mejor. No te vayas 💙', convId);
                 const fallback = res.messageForUser || 'Lo siento, ha habido un problema. Puedes llamar directamente al ANAR: 900 20 20 10 (gratuito, 24h).';
                 await addAIMessage(fallback, convId);
             }
@@ -239,7 +245,6 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
         }
 
         setIsHelpRequesting(true);
-        await addAIMessage('Un momento, voy a ver quién te puede ayudar mejor. No te vayas 💙', convId);
         await triggerHelpRequest(convId);
     };
 
@@ -299,7 +304,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
         if (!currentConvId && user) {
             // Auto-start if no conversation is active
             const res = await window.electronAPI.session.newConversation(user.id);
-            if (res.success) {
+            if (res.success && res.conversationId) {
                 currentConvId = res.conversationId;
                 setConversationId(currentConvId);
             } else return;
@@ -332,13 +337,30 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
             }));
             
             const messagesHistory = [
-                { role: 'system', content: `Eres "Tu Amigo", un asistente empático y cálido diseñado para ayudar a personas que sufren acoso escolar. Escucha activamente, valida sus sentimientos y ofrece apoyo emocional genuino. Nunca juzgues.
+                { role: 'system', content: `Eres "Tu Amigo", un apoyo empático para personas que sufren acoso. Escucha, valida, acompaña. Nunca juzgues.
 
-IMPORTANTE: Cuando detectes señales de alarma en el lenguaje del usuario (desesperanza, frases como "no puedo más", "nadie me ayuda", escalada emocional intensa, o cualquier mención directa o indirecta de hacerse daño), introduce de forma natural y cálida la mención al botón de ayuda. Hazlo como lo haría una persona real, integrado en tu respuesta, sin brusquedad. Ejemplo: "No tienes que pasar por esto solo/a. Si en algún momento sientes que necesitas hablar con alguien más, tienes el botón de ayuda arriba — puedo ponerme en contacto con quien te pueda apoyar de verdad."
+TONO Y ESTILO (CRÍTICO):
+- Habla en español de España, cercano y cálido pero siempre respetuoso.
+- MÁXIMO 2 frases por mensaje. Sé breve. Si tienes dos ideas, usa " | " para separarlas en una sola respuesta corta.
+- Haz UNA sola pregunta por mensaje, nunca varias.
+- PROHIBIDO dar discursos, listas de consejos o párrafos largos.
+- PROHIBIDO usar tacos, palabrotas o lenguaje vulgar (ni "mierda", "joder", "mandarlos a paseo", etc.). Usa alternativas neutras: "qué duro", "vaya situación", "no está bien".
+- PROHIBIDO decir "entiendo profundamente", "valido tu experiencia", "es totalmente comprensible que...".
 
-Si en la conversación surge de forma natural la oportunidad de preguntar por la provincia o ciudad del usuario, o el nombre de su centro educativo (especialmente si hay acoso en clase), pregúntalo de forma conversacional y natural, nunca como un formulario.
+Si el usuario escribe algo incoherente, sin sentido, insultos sin contexto o texto muy corto (como "kaka", "aaa", "jeje", "asdf"), NO lo interpretes como parte de la situación que describe. Reconócelo directamente y reconecta con la conversación anterior si la hay. Ejemplos:
+- Si ya había contexto: "No te he entendido bien. | ¿Sigues queriendo contarme lo del trabajo?"
+- Si no hay contexto: "No te he entendido. ¿Quieres contarme qué te pasa?"
 
-No menciones métricas, porcentajes, ni niveles de riesgo al usuario. Todo debe sentirse como una conversación humana y real.` },
+Ejemplo BIEN: "Vaya, eso suena muy agotador. | ¿Cuánto tiempo llevas así?"
+Ejemplo MAL: tres párrafos explicando el acoso laboral con empatía detallada.
+
+ALERTAS: Si el usuario menciona desesperanza o "no puedo más", introduce el botón de ayuda de forma natural y breve. Ejemplo: "No tienes que aguantar esto solo. Arriba tienes un botón para que te eche una mano alguien de verdad 💙"
+
+Si surge de forma natural, pregunta por la ciudad o centro educativo del usuario — pero de forma conversacional, nunca como formulario.
+
+Si el usuario menciona un correo electrónico (del centro, de un orientador, etc.), acúsalo recibo brevemente y guárdalo mentalmente. NO digas "yo no puedo enviar correos" — cuando el usuario pida ayuda, el sistema sí puede contactar con ese correo. Ejemplo: "Anotado, ese correo puede ser muy útil si decides pedir ayuda."
+
+No menciones métricas ni niveles de riesgo.` },
                 ...historyForAI,
                 { role: 'user', content: inputText }
             ];
@@ -349,19 +371,21 @@ No menciones métricas, porcentajes, ni niveles de riesgo al usuario. Todo debe 
                 throw new Error("No puedo responder en este momento. Inténtalo de nuevo más tarde.");
             }
 
-            const aiResponse: Message = {
-                id: (Date.now() + 1).toString(),
-                text: responseText,
+            const parts = responseText.split('|').map((p: string) => p.trim()).filter((p: string) => p.length > 0);
+            const now = Date.now();
+            const aiMessages: Message[] = parts.map((text: string, i: number) => ({
+                id: (now + i + 1).toString(),
+                text,
                 isUser: false,
                 timestamp: new Date()
-            };
-            setMessages(prev => [...prev, aiResponse]);
+            }));
+            setMessages(prev => [...prev, ...aiMessages]);
 
             if (user && currentConvId) {
                 await window.electronAPI.session.addMessageToConversation({
                     userId: user.id,
                     conversationId: currentConvId,
-                    message: { texto: responseText, emisor: 'modelo', fecha_envio: aiResponse.timestamp }
+                    message: { texto: responseText, emisor: 'modelo', fecha_envio: aiMessages[0].timestamp }
                 });
                 fetchConversations(); // Update snippet if it's the first message
                 
@@ -369,6 +393,17 @@ No menciones métricas, porcentajes, ni niveles de riesgo al usuario. Todo debe 
                 const fullHistory = [...messagesHistory, { role: 'model', content: responseText }]
                     .filter(m => m.role !== 'system');
                 window.electronAPI.session.analyzeMetrics({ userId: user.id, messages: fullHistory }).catch(console.error);
+
+                // Auto-notify n8n if user mentioned an email contact
+                const emailMatch = inputText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+                if (emailMatch && !awaitingHelpInfo) {
+                    window.electronAPI.session.notifyEmailContact({
+                        userId: user.id,
+                        conversationId: currentConvId,
+                        email: emailMatch[0],
+                        mensaje: inputText,
+                    }).catch(console.error);
+                }
             }
         } catch (error: any) {
             setToastMsg(error.message || "Lo siento, tuve un problema al procesar tu mensaje.");

@@ -92,7 +92,7 @@ app.whenReady().then(async () => {
     throw lastError;
   }
 
-  ipcMain.handle('chat', async (event, messages) => {
+  ipcMain.handle('chat', async (_event, messages) => {
     try {
       const apiKey = process.env.GEMINI_API_KEY;
       const modelName = process.env.GEMINI_MODEL || "gemini-flash-latest";
@@ -163,7 +163,7 @@ app.whenReady().then(async () => {
   });
 
   // ========== AUTHENTICATION ========== //
-  ipcMain.handle('auth:register', async (event, { nombre, correo, password }) => {
+  ipcMain.handle('auth:register', async (_event, { nombre, correo, password }) => {
     try {
       const existingUser = await Usuario.findOne({ correo });
       if (existingUser) return { success: false, error: "El correo ya está registrado." };
@@ -198,7 +198,7 @@ app.whenReady().then(async () => {
     }
   });
 
-  ipcMain.handle('auth:login', async (event, { correo, password }) => {
+  ipcMain.handle('auth:login', async (_event, { correo, password }) => {
     try {
       const user = await Usuario.findOne({ correo });
       if (!user) return { success: false, error: "Usuario o contraseña incorrectos." };
@@ -216,7 +216,7 @@ app.whenReady().then(async () => {
   });
 
   // ========== SESSIONS & CHAT HISTORY ========== //
-  ipcMain.handle('session:getConversations', async (event, userId) => {
+  ipcMain.handle('session:getConversations', async (_event, userId) => {
     try {
       let session = await Sesion.findOne({ id_usuario: userId });
       if (!session) {
@@ -241,7 +241,7 @@ app.whenReady().then(async () => {
     }
   });
 
-  ipcMain.handle('session:getMessages', async (event, { userId, conversationId, limit, skip }) => {
+  ipcMain.handle('session:getMessages', async (_event, { userId, conversationId, limit, skip }) => {
     try {
       const session = await Sesion.findOne({ id_usuario: userId });
       if (!session) throw new Error("No session found");
@@ -272,14 +272,14 @@ app.whenReady().then(async () => {
     }
   });
 
-  ipcMain.handle('session:newConversation', async (event, userId) => {
+  ipcMain.handle('session:newConversation', async (_event, userId) => {
     try {
       let session = await Sesion.findOne({ id_usuario: userId });
       if (!session) throw new Error("No session found");
-      
+
       session.conversaciones.push({ mensajes: [] });
       await session.save();
-      
+
       const newConversation = session.conversaciones[session.conversaciones.length - 1];
       return { success: true, conversationId: newConversation._id.toString() };
     } catch (error: any) {
@@ -287,7 +287,7 @@ app.whenReady().then(async () => {
     }
   });
 
-  ipcMain.handle('session:addMessageToConversation', async (event, { userId, conversationId, message }) => {
+  ipcMain.handle('session:addMessageToConversation', async (_event, { userId, conversationId, message }) => {
     try {
       const session = await Sesion.findOne({ id_usuario: userId });
       if (!session) throw new Error("No session found");
@@ -305,7 +305,7 @@ app.whenReady().then(async () => {
     }
   });
 
-  ipcMain.handle('session:deleteConversation', async (event, { userId, conversationId }) => {
+  ipcMain.handle('session:deleteConversation', async (_event, { userId, conversationId }) => {
     try {
       const session = await Sesion.findOne({ id_usuario: userId });
       if (!session) throw new Error("No session found");
@@ -320,7 +320,7 @@ app.whenReady().then(async () => {
     }
   });
 
-  ipcMain.handle('session:analyzeMetrics', async (event, { userId, messages }) => {
+  ipcMain.handle('session:analyzeMetrics', async (_event, { userId, messages }) => {
     try {
       if (!messages || messages.length === 0) return { success: true };
       const apiKey = process.env.GEMINI_API_KEY;
@@ -381,7 +381,7 @@ app.whenReady().then(async () => {
     }
   });
 
-  ipcMain.handle('session:requestHelp', async (event, { userId, conversationId, pendingInfo }) => {
+  ipcMain.handle('session:requestHelp', async (_event, { userId, conversationId, pendingInfo }) => {
     try {
       const apiKey = process.env.GEMINI_API_KEY;
       const modelName = process.env.GEMINI_MODEL || "gemini-flash-latest";
@@ -401,12 +401,16 @@ app.whenReady().then(async () => {
 
       // Check if we need more info before calling n8n
       if (!perfil.provincia) {
-        return { needsInfo: true, field: 'provincia', question: "Para buscar quien está más cerca de ti, ¿me puedes decir en qué provincia o ciudad estás?" };
+        return { needsInfo: true, field: 'provincia', question: "Antes de buscar ayuda cerca de ti, ¿en qué ciudad o provincia vives?" };
       }
 
       const esTipoEscolar = perfil.tipo_situacion?.toLowerCase().includes('escolar');
       if (esTipoEscolar && !perfil.centro_educativo) {
-        return { needsInfo: true, field: 'centro_educativo', question: "¿Me puedes decir el nombre del colegio o instituto donde está pasando esto?" };
+        return { needsInfo: true, field: 'centro_educativo', question: "¿En qué colegio o instituto estudias? (Solo el nombre del centro, por ejemplo: 'IES Cervantes')" };
+      }
+
+      if (!perfil.correo_centro) {
+        return { needsInfo: true, field: 'correo_centro', question: "¿Tienes el correo electrónico del orientador u orientadora de tu centro, o de algún adulto de confianza? Así podemos avisarle directamente." };
       }
 
       // Get last 20 messages for summary
@@ -422,8 +426,22 @@ app.whenReady().then(async () => {
         }
       }
 
-      // Generate case summary with Gemini
+      // Normalize city/town to province name using Gemini
       const genAI = new GoogleGenerativeAI(apiKey);
+      const normModel = genAI.getGenerativeModel({ model: modelName });
+      try {
+        const normResult = await normModel.generateContent(
+          `¿En qué provincia española está "${perfil.provincia}"? Responde SOLO con el nombre de la provincia en español, sin artículos ni puntuación. Ejemplo: "Zaragoza" o "Barcelona". Si no lo sabes, responde "null".`
+        );
+        const normalized = normResult.response.text().trim().replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]/g, '').trim();
+        if (normalized && normalized.toLowerCase() !== 'null') {
+          perfil.provincia = normalized;
+          user.perfil = { ...user.perfil?.toObject?.() || user.perfil, provincia: normalized };
+          await user.save();
+        }
+      } catch { /* si falla la normalización, continuar con el valor original */ }
+
+      // Generate case summary with Gemini
       const summaryModel = genAI.getGenerativeModel({ model: modelName });
       const summaryPrompt = `Eres un asistente que genera resúmenes de casos de acoso para servicios de ayuda.
 Genera un resumen conciso y objetivo del siguiente caso. Devuelve SOLO un JSON con este formato:
@@ -451,6 +469,16 @@ ${mensajesRecientes.map((m: any) => `${m.role}: ${m.content}`).join('\n')}`;
         puntos_clave = summaryData.puntos_clave || [];
       }
 
+      // Extract any email address mentioned in the conversation
+      const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+      let correo_centro: string | null = perfil.correo || null;
+      if (!correo_centro) {
+        for (const msg of mensajesRecientes) {
+          const matches = msg.content.match(emailRegex);
+          if (matches) { correo_centro = matches[0]; break; }
+        }
+      }
+
       const capitalize = (s: string | undefined) =>
         s ? s.charAt(0).toUpperCase() + s.slice(1) : undefined;
       const payload = {
@@ -458,6 +486,7 @@ ${mensajesRecientes.map((m: any) => `${m.role}: ${m.content}`).join('\n')}`;
         edad: perfil.edad || 'Desconocida',
         provincia: perfil.provincia,
         centro_educativo: perfil.centro_educativo || null,
+        correo_centro,
         tipo_situacion: perfil.tipo_situacion || 'otro',
         resumen,
         nivel_riesgo: capitalize(perfil.nivel_riesgo) || 'Medio',
@@ -484,28 +513,238 @@ ${mensajesRecientes.map((m: any) => `${m.role}: ${m.content}`).join('\n')}`;
       });
       clearTimeout(timeoutId);
 
-      if (!n8nResponse.ok) throw new Error(`n8n responded with ${n8nResponse.status}`);
-
-      const result = await n8nResponse.json();
-      return {
+      const anarFallback = {
         success: true,
-        resource: result.resource,
-        contact: result.contact,
-        messageForUser: result.messageForUser || 'He contactado con un servicio de ayuda. Alguien se pondrá en contacto contigo pronto. Estás haciendo lo correcto.'
+        resource: 'Fundación ANAR',
+        contact: '900 20 20 10',
+        messageForUser: 'He buscado un recurso de ayuda para ti. Puedes contactar con la Fundación ANAR en el 900 20 20 10. Es un servicio gratuito y confidencial. Estás siendo muy valiente al pedir ayuda.'
       };
+
+      if (!n8nResponse.ok) {
+        console.error('[requestHelp] n8n error:', n8nResponse.status);
+        return anarFallback;
+      }
+
+      try {
+        const result = await n8nResponse.json();
+        return {
+          success: true,
+          resource: result.resource || 'Fundación ANAR',
+          contact: result.contact || '900 20 20 10',
+          messageForUser: result.messageForUser || 'He contactado con un servicio de ayuda. Estás haciendo lo correcto.'
+        };
+      } catch {
+        return anarFallback;
+      }
     } catch (error: any) {
       console.error('[requestHelp] Error:', error);
       return {
-        success: false,
-        error: error.message,
-        messageForUser: 'Ha ocurrido un problema al intentar contactar. Por favor, llama directamente al ANAR: 900 20 20 10 (gratuito, disponible 24h).'
+        success: true,
+        resource: 'Fundación ANAR',
+        contact: '900 20 20 10',
+        messageForUser: 'He buscado un recurso de ayuda para ti. Puedes contactar con la Fundación ANAR en el 900 20 20 10. Es gratuito y confidencial. Estás haciendo lo correcto.'
       };
     }
   });
 
+  // Silently notify n8n when user provides a trusted contact email in chat
+  ipcMain.handle('session:notifyEmailContact', async (_event, { userId, conversationId, email, mensaje }) => {
+    try {
+      const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL;
+      if (!n8nWebhookUrl) return;
+
+      const user = await Usuario.findById(userId);
+      if (!user) return;
+
+      const perfil = user.perfil || {};
+
+      // Save email to profile
+      user.perfil = { ...perfil?.toObject?.() || perfil, correo_centro: email };
+      await user.save();
+
+      const payload = {
+        nombre: user.nombre,
+        provincia: perfil.provincia || 'Desconocida',
+        centro_educativo: perfil.centro_educativo || null,
+        correo_centro: email,
+        tipo_situacion: perfil.tipo_situacion || 'otro',
+        nivel_riesgo: perfil.nivel_riesgo || 'Medio',
+        resumen: `El usuario ha proporcionado un correo de contacto de confianza durante la conversación: ${email}. Mensaje: "${mensaje}"`,
+        puntos_clave: [`Correo de contacto aportado voluntariamente: ${email}`],
+        trigger: 'email_contact_mentioned',
+      };
+
+      fetch(n8nWebhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }).catch(console.error);
+    } catch (e) {
+      console.error('[notifyEmailContact]', e);
+    }
+  });
+
+  // ========== SEGUIMIENTO (FOLLOW-UP) ========== //
+  ipcMain.handle('session:markHelpRequested', async (_event, { userId, conversationId }) => {
+    try {
+      const sesion = await Sesion.findOne({ id_usuario: userId });
+      if (!sesion) return { success: false };
+      const conv = sesion.conversaciones.id(conversationId);
+      if (!conv) return { success: false };
+      conv.ayuda_solicitada = true;
+      await sesion.save();
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('session:getPendingFollowUps', async (_event, userId) => {
+    try {
+      const sesion = await Sesion.findOne({ id_usuario: userId });
+      if (!sesion) return { success: true, pendingFollowUps: [] };
+
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const pendingFollowUps: any[] = [];
+
+      for (const conv of sesion.conversaciones) {
+        if (conv.resuelta) continue;
+        if (!conv.ayuda_solicitada) continue;
+
+        const lastSeguimiento = conv.fecha_ultimo_seguimiento;
+        const needsCheckIn = !lastSeguimiento || lastSeguimiento < sevenDaysAgo;
+        if (!needsCheckIn) continue;
+
+        const firstUserMsg = conv.mensajes.find((m: any) => m.emisor === 'usuario');
+        const snippet = firstUserMsg?.texto || 'Conversación';
+        pendingFollowUps.push({
+          conversationId: conv._id.toString(),
+          title: snippet.length > 50 ? snippet.substring(0, 50) + '...' : snippet,
+        });
+      }
+
+      return { success: true, pendingFollowUps };
+    } catch (error: any) {
+      return { success: false, error: error.message, pendingFollowUps: [] };
+    }
+  });
+
+  ipcMain.handle('session:recordFollowUp', async (_event, { userId, conversationId, respuesta }) => {
+    try {
+      const sesion = await Sesion.findOne({ id_usuario: userId });
+      if (!sesion) return { success: false };
+      const conv = sesion.conversaciones.id(conversationId);
+      if (!conv) return { success: false };
+
+      conv.seguimientos.push({ respuesta, fecha: new Date() });
+      conv.fecha_ultimo_seguimiento = new Date();
+
+      if (respuesta === 'mejor') {
+        conv.resuelta = true;
+      }
+
+      await sesion.save();
+
+      const n8nFollowUpUrl = process.env.N8N_FOLLOWUP_WEBHOOK_URL;
+      if (n8nFollowUpUrl && respuesta === 'peor') {
+        const user = await Usuario.findById(userId);
+        fetch(n8nFollowUpUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            conversationId,
+            nombre: user?.nombre || 'Desconocido',
+            respuesta,
+            provincia: user?.perfil?.provincia || null,
+            tipo_situacion: user?.perfil?.tipo_situacion || 'desconocido',
+          }),
+        }).catch(console.error);
+      }
+
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  // ========== REPORT GENERATION ========== //
+  ipcMain.handle('session:generateReport', async (_event, { userId, conversationId }) => {
+    try {
+      const apiKey = process.env.GEMINI_API_KEY;
+      const modelName = process.env.GEMINI_MODEL || 'gemini-flash-latest';
+      const n8nReportUrl = process.env.N8N_REPORT_WEBHOOK_URL;
+      if (!apiKey) throw new Error('No API key');
+
+      const user = await Usuario.findById(userId);
+      if (!user) throw new Error('User not found');
+
+      const sesion = await Sesion.findOne({ id_usuario: userId });
+      if (!sesion) throw new Error('No session found');
+
+      const conv = sesion.conversaciones.id(conversationId);
+      if (!conv) throw new Error('Conversation not found');
+
+      const mensajes = conv.mensajes.map((m: any) => ({
+        role: m.emisor === 'usuario' ? 'user' : 'assistant',
+        content: m.texto
+      }));
+
+      const perfil = user.perfil || {};
+
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: modelName });
+
+      const reportPrompt = `Eres un asistente experto en redacción de informes para orientadores escolares.
+Genera un informe confidencial y profesional sobre el siguiente caso de acoso escolar.
+Sé objetivo, factual y respetuoso. Usa un tono formal pero empático.
+Devuelve SOLO el texto del informe (no JSON), estructurado con estas secciones:
+
+INFORME CONFIDENCIAL - TU AMIGO
+Fecha: ${new Date().toLocaleDateString('es-ES')}
+
+1. DATOS DEL CASO
+2. DESCRIPCIÓN DE LA SITUACIÓN
+3. NIVEL DE RIESGO Y JUSTIFICACIÓN
+4. PUNTOS CLAVE
+5. RECOMENDACIONES
+
+Datos del perfil:
+- Nombre: ${user.nombre}
+- Edad: ${perfil.edad || 'No indicada'}
+- Centro educativo: ${perfil.centro_educativo || 'No indicado'}
+- Tipo de situación: ${perfil.tipo_situacion || 'Acoso escolar'}
+- Nivel de riesgo: ${perfil.nivel_riesgo || 'Medio'}
+
+Historial:
+${mensajes.map((m: any) => `${m.role === 'user' ? 'Estudiante' : 'Tu Amigo'}: ${m.content}`).join('\n')}`;
+
+      const result = await model.generateContent(reportPrompt);
+      const reportText = result.response.text();
+
+      if (n8nReportUrl) {
+        fetch(n8nReportUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nombre: user.nombre,
+            correo: user.correo,
+            centro_educativo: perfil.centro_educativo || null,
+            provincia: perfil.provincia || null,
+            nivel_riesgo: perfil.nivel_riesgo || 'Medio',
+            tipo_situacion: perfil.tipo_situacion || 'acoso escolar',
+            reporte_texto: reportText,
+          }),
+        }).catch(console.error);
+      }
+
+      return { success: true, reportText };
+    } catch (error: any) {
+      console.error('[generateReport] Error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
   app.on('activate', () => {
-    // En macOS es común volver a crear una ventana en la aplicación cuando
-    // se hace clic en el icono del dock y no hay otras ventanas abiertas.
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
     }
